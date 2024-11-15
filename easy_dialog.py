@@ -139,24 +139,24 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
                         "(<a href='https://www.eorc.jaxa.jp/ALOS/en/aw3d30/index.htm'>Source</a>)"
             },
             "GMTED2010 (Global Multi-resolution Terrain Elevation Data 2010)": {
-                "ID": "USGS/GMTED2010",
+                "ID": "USGS/GMTED2010_FULL",
                 "Resolution": [250, 500, 1000],
                 "Coverage": "Global",
                 "Description": "Successor to GTOPO30, GMTED2010 offers improved elevation data at multiple resolutions.",
                 "Info": "<b>GMTED2010</b> <br>"
-                        "<b>ID:</b> USGS/GMTED2010 <br>"
+                        "<b>ID:</b> USGS/GMTED2010_FULL <br>"
                         "<b>Resolutions:</b> 250, 500, and 1000 meters <br>"
                         "<b>Coverage:</b> Global <br>"
                         "An update from GTOPO30 by the USGS and NGA, providing <i>multi-resolution elevation data</i> for regional to global scale analyses. "
                         "(<a href='https://topotools.cr.usgs.gov/gmted_viewer/viewer.htm'>Source</a>)"
             },
             "NASADEM": {
-                "ID": "NASA/NASADEM_HGT",
+                "ID": "NASA/NASADEM_HGT/001",
                 "Resolution": [30],
                 "Coverage": "Global",
                 "Description": "Refined version of SRTM data, updated by NASA to address inaccuracies in original SRTM measurements.",
                 "Info": "<b>NASADEM</b> <br>"
-                        "<b>ID:</b> NASA/NASADEM_HGT <br>"
+                        "<b>ID:</b> NASA/NASADEM_HGT/001 <br>"
                         "<b>Resolution:</b> 30 meters <br>"
                         "<b>Coverage:</b> Global <br>"
                         "Refined SRTM data with enhanced accuracy in specific regions. Suitable for <i>detailed topographic studies and high-resolution terrain analysis</i>. "
@@ -381,12 +381,19 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         DEM_resolution = int(self.dem_resolution_combobox.currentText())
         print(f"Selected DEM source: {DEM_source_key} ({DEM_source_id})", DEM_resolution    )
 
-        # Fetch and download DEM data
-        try:
+        if DEM_source_id == 'COPERNICUS/DEM/GLO30':
+            dem = ee.ImageCollection(DEM_source_id).select('DEM').mosaic().clip(aoi)
+        elif DEM_source_id == 'JAXA/ALOS/AW3D30/V3_2':
+            dem = ee.ImageCollection(DEM_source_id).select('DSM').mosaic().clip(aoi)
+        elif DEM_source_id == 'NASA/NASADEM_HGT/001':
+            dem = ee.Image(DEM_source_id).select('elevation').clip(aoi)
+        elif DEM_source_id == 'USGS/GMTED2010_FULL':
+            dem = ee.Image(DEM_source_id).select('min').clip(aoi)
+        elif DEM_source_id == 'ASTER/ASTGTM':
+            dem = ee.Image(DEM_source_id).select('elevation').clip(aoi)
+        else:
+            # Default handling for other DEMs
             dem = ee.Image(DEM_source_id).clip(aoi).select('elevation')
-        except Exception as e:
-            print(f"Error fetching DEM data: {e}")
-            return
 
         try:
             url = dem.getDownloadUrl({
@@ -395,7 +402,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
                 'format': 'GeoTIFF'
             })
 
-            base_file_name = 'elevation_profile.tif'
+            base_file_name = 'elevation_profile'
             output_file = self.get_unique_filename(base_file_name)
             
 
@@ -408,48 +415,6 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
             print(f"Error during download: {e}")
             return
 
-        raster_path = output_file
-        shp_path = self.selected_aio_layer_path  # Assuming you have this path set up
-        clipped_dem_path = self.get_unique_filename('clipped_dem.tif')
+        raster_layer = QgsRasterLayer(output_file, "Elevation Layer - "+DEM_source_id)
+        QgsProject.instance().addMapLayer(raster_layer)
 
-        raster_layer = QgsRasterLayer(raster_path, "Elevation Layer")
-        vector_layer = QgsVectorLayer(shp_path, "Vector Layer", "ogr")
-
-        if not raster_layer.isValid():
-            print(f"Error loading raster: {raster_path}")
-            return
-        if not vector_layer.isValid():
-            print(f"Error loading vector: {shp_path}")
-            return
-
- 
-        # Clip DEM to AOI
-        processing.run("gdal:cliprasterbymasklayer", {
-            'INPUT': raster_layer,
-            'MASK': vector_layer,
-            'NODATA': -9999,
-            'CROP_TO_CUTLINE': True,
-            'OUTPUT': clipped_dem_path
-        })
-        print(f"Clipped DEM saved to: {clipped_dem_path}")
-
-        clipped_raster_layer = QgsRasterLayer(clipped_dem_path, 'Elevation Profile')
-        if clipped_raster_layer.isValid():
-            QgsProject.instance().addMapLayer(clipped_raster_layer)
-            print("Clipped DEM added to canvas")
-        else:
-            print("Failed to load clipped DEM")
-
-        # Generate contours using gdal:contour
-        contours_gdal_path = self.get_unique_filename('contours_gdal.shp')
-        gdal_params = {
-            'INPUT': clipped_dem_path,
-            'BAND': 1,
-            'INTERVAL': 10,  # Contour interval
-            'FIELD_NAME': 'elevation',
-            'CREATE_3D': False,
-            'IGNORE_NODATA': True,
-            'NODATA': -9999,
-            'OUTPUT': contours_gdal_path
-        }
-            

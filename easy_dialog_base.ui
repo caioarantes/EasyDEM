@@ -75,7 +75,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>2ª Step (After confimation of step 1):</string>
+      <string>2ª Step</string>
      </property>
     </widget>
     <widget class="QPushButton" name="autenticacao_teste">
@@ -88,7 +88,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Retrive authentication key</string>
+      <string>Retrive authentication tolken</string>
      </property>
     </widget>
     <widget class="QPushButton" name="desautenticacao">
