@@ -130,90 +130,125 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         super(easydemDialog, self).__init__(parent)
         self.setupUi(self)
 
-        self.dem_datasets = {
-            "ASTER Global Digital Elevation Model (GDEM)": {
-                "ID": "NASA/ASTER_GED/AG100_003",
+        self.dem_datasets = { "NASADEM": {
+                "ID": "NASA/NASADEM_HGT/001",
                 "Resolution": [30],
                 "Coverage": "Global",
-                "Description": "Elevation data generated from the ASTER instrument on NASA's Terra satellite, providing high-resolution global elevation data.",
-                "Info": "<b>ASTER GDEM</b> <br>"
-                        "<b>ID:</b> NASA/ASTER_GED/AG100_003 <br>"
+                "Description": "A refined reprocessing of SRTM data, incorporating auxiliary datasets for improved accuracy and void reduction.",
+                "Info": "<b>NASADEM</b> <br>"
+                        "<b>ID:</b> NASA/NASADEM_HGT/001 <br>"
                         "<b>Resolution:</b> 30 meters <br>"
                         "<b>Coverage:</b> Global <br>"
-                        "Produced by NASA and Japan's METI using ASTER onboard Terra. Widely used in <i>hydrology, topography, and environmental studies</i>. "
-                        "(<a href='https://lpdaac.usgs.gov/products/astgtmv003/'>Source</a>)"
+                        "NASADEM integrates auxiliary data from ASTER GDEM, ICESat GLAS, and PRISM datasets. Significant improvements include enhanced phase unwrapping and void reduction using ICESat GLAS data as control. "
+                        "These refinements make it ideal for detailed topographic studies and high-resolution terrain analysis. "
+                        "(<a href='https://earthdata.nasa.gov/esds/competitive-programs/measures/nasadem'>Source</a>)"
+            },
+            "ASTER Global Digital Elevation Model (GDEM)": {
+                "ID": "NASA/ASTER_GED/AG100_003",
+                "Resolution": [100],
+                "Coverage": "Global",
+                "Description": "The Advanced Spaceborne Thermal Emission and Reflection Radiometer Global Emissivity Database (ASTER-GED) is a comprehensive product developed by NASA's JPL and Caltech. It includes elevation data, mean emissivity, LST, NDVI, and standard deviations for ASTER Thermal Infrared bands.",
+                "Info": "<b>ASTER GDEM</b> <br>"
+                        "<b>ID:</b> NASA/ASTER_GED/AG100_003 <br>"
+                        "<b>Resolution:</b> 100 meters <br>"
+                        "<b>Coverage:</b> Global <br>"
+                        "Derived from clear-sky pixels using the ASTER Temperature Emissivity Separation (TES) algorithm with WVS atmospheric correction. "
+                        "(<a href='https://developers.google.com/earth-engine/datasets/catalog/NASA_ASTER_GED_AG100_003/'>Source</a>)"
             },
             "Copernicus Global Digital Elevation Model (GLO-30)": {
                 "ID": "COPERNICUS/DEM/GLO30",
                 "Resolution": [30],
                 "Coverage": "Global",
-                "Description": "Produced by the European Union's Copernicus program, providing global elevation data at 30-meter resolution.",
+                "Description": "A Digital Surface Model (DSM) that includes Earth's surface features such as buildings, infrastructure, and vegetation, derived from the WorldDEM product.",
                 "Info": "<b>Copernicus GLO-30</b> <br>"
                         "<b>ID:</b> COPERNICUS/DEM/GLO30 <br>"
                         "<b>Resolution:</b> 30 meters <br>"
                         "<b>Coverage:</b> Global <br>"
-                        "Derived from optical stereo imagery, supporting applications in <i>environmental monitoring, land use planning, and climate impact studies</i>. "
+                        "Derived from the WorldDEM product, based on radar data from the TanDEM-X mission, a partnership between DLR and Airbus Defence and Space. "
+                        "Earth Engine assets are ingested from DGED files. "
                         "(<a href='https://spacedata.copernicus.eu/collections/elevation'>Source</a>)"
             },
             "JAXA ALOS Global Digital Surface Model (AW3D30)": {
                 "ID": "JAXA/ALOS/AW3D30/V3_2",
                 "Resolution": [30],
                 "Coverage": "Global",
-                "Description": "Surface model created by JAXA, derived from radar data collected by the ALOS satellite.",
+                "Description": "A global digital surface model (DSM) dataset at ~30-meter resolution, derived from the high-resolution (5-meter) World 3D Topographic Data.",
                 "Info": "<b>JAXA ALOS DSM (AW3D30)</b> <br>"
                         "<b>ID:</b> JAXA/ALOS/AW3D30/V3_2 <br>"
                         "<b>Resolution:</b> 30 meters <br>"
                         "<b>Coverage:</b> Global <br>"
-                        "Developed by JAXA using data from the ALOS satellite, suitable for <i>disaster risk assessment and resource management</i>. "
+                        "Version 3.2 (January 2021) includes updates to high-latitude formats, auxiliary data, and processing methods. "
+                        "It uses stereo optical image matching for elevation calculation, with improvements in detecting anomalous values and incorporating updated auxiliary datasets such as coastline and AW3D version 3 data for Japan. "
+                        "Clouds, snow, and ice are masked during processing, but some errors may persist near their edges. "
+                        "Due to variable resolutions, this dataset is an image collection, requiring reprojection for slope computations. "
                         "(<a href='https://www.eorc.jaxa.jp/ALOS/en/aw3d30/index.htm'>Source</a>)"
             },
             "GMTED2010 (Global Multi-resolution Terrain Elevation Data 2010)": {
                 "ID": "USGS/GMTED2010_FULL",
                 "Resolution": [250, 500, 1000],
                 "Coverage": "Global",
-                "Description": "Successor to GTOPO30, GMTED2010 offers improved elevation data at multiple resolutions.",
+                "Description": "A global elevation dataset derived from multiple sources, replacing the GTOPO30 Elevation Model, with coverage at multiple resolutions.",
                 "Info": "<b>GMTED2010</b> <br>"
                         "<b>ID:</b> USGS/GMTED2010_FULL <br>"
                         "<b>Resolutions:</b> 250, 500, and 1000 meters <br>"
                         "<b>Coverage:</b> Global <br>"
-                        "An update from GTOPO30 by the USGS and NGA, providing <i>multi-resolution elevation data</i> for regional to global scale analyses. "
+                        "Developed using NGA's SRTM DTED® (1-arc-second void-filled data) as the primary source. Additional data sources include non-SRTM DTED®, Canadian CDED, SPOT 5 Reference3D, US NED, Australia's GEODATA, and DEMs for Antarctica and Greenland. "
+                        "This dataset offers improved global elevation data and replaces the GTOPO30 Elevation Model. "
                         "(<a href='https://topotools.cr.usgs.gov/gmted_viewer/viewer.htm'>Source</a>)"
-            },
-            "NASADEM": {
-                "ID": "NASA/NASADEM_HGT/001",
-                "Resolution": [30],
-                "Coverage": "Global",
-                "Description": "Refined version of SRTM data, updated by NASA to address inaccuracies in original SRTM measurements.",
-                "Info": "<b>NASADEM</b> <br>"
-                        "<b>ID:</b> NASA/NASADEM_HGT/001 <br>"
-                        "<b>Resolution:</b> 30 meters <br>"
-                        "<b>Coverage:</b> Global <br>"
-                        "Refined SRTM data with enhanced accuracy in specific regions. Suitable for <i>detailed topographic studies and high-resolution terrain analysis</i>. "
-                        "(<a href='https://earthdata.nasa.gov/esds/competitive-programs/measures/nasadem'>Source</a>)"
             }
+
         }
+
+
+        self.folder_set = False
+        self.aio_set = True
+        self.autentication = False
 
         # Call update_dem_datasets after initialization to avoid accessing dem_datasets before it's defined.
         self.update_dem_datasets()
         self.load_vector_layers()
         self.dem_dataset_combobox.currentIndexChanged.connect(self.update_dem_info)
-        self.select_output_folder_button.clicked.connect(self.select_output_folder)
         self.load_vector_layers_button.clicked.connect(self.load_vector_layers)
         self.vector_layer_combobox.currentIndexChanged.connect(self.get_selected_layer_path)
         # self.autenticacao.clicked.connect(self.auth)
         self.autenticacao_teste.clicked.connect(self.auth_test)
         self.desautenticacao.clicked.connect(self.auth_clear)
         self.elevacao.clicked.connect(self.elevacao_clicked)
+        self.mQgsFileWidget.fileChanged.connect(self.on_file_changed)
+        self.pushButtonNext.clicked.connect(self.next_button_clicked)
+        self.tabWidget.currentChanged.connect(self.on_tab_changed)
+
+    def on_tab_changed(self, index):
+        print(f"Tab changed to index: {index}")
+        if index == 2 and (self.pushButtonNext.isEnabled() == False):
+            self.tabWidget.setCurrentIndex(1)
+            return
+        
+        if index == 1 and (self.autentication == False):
+            self.tabWidget.setCurrentIndex(0)
+
+
+    def next_button_clicked(self):
+        self.tabWidget.setCurrentIndex(self.tabWidget.currentIndex() + 1)
+
+    def on_file_changed(self, file_path):
+        """Slot called when the selected file changes."""
+        print(f"File selected: {file_path}")
+        self.output_folder = file_path
+        self.folder_set = True
+        self.check_next_button()
+
+    def check_next_button(self):
+        """Enables the Next button if all required inputs are set."""
+        if self.folder_set and self.aio_set:
+            self.pushButtonNext.setEnabled(True)
+        else:
+            self.pushButtonNext.setEnabled(False)
 
     def update_dem_datasets(self):
         print(list(self.dem_datasets.keys()))
         self.dem_dataset_combobox.addItems(list(self.dem_datasets.keys()))
         self.update_dem_info()
-
-    def select_output_folder(self):
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Output Folder")
-        if folder:
-            self.output_folder_lineedit.setText(folder)
 
     def get_unique_filename(self, base_file_name):
         """
@@ -226,7 +261,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         Returns:
         str: The unique filename.
         """
-        output_file = self.output_folder_lineedit.text()+f'/{base_file_name}.tif'
+        output_file = self.output_folder+f'/{base_file_name}.tif'
         counter = 1
 
         while os.path.exists(output_file):
@@ -297,14 +332,15 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         try:
             ee.Authenticate()
             ee.Initialize()
-            self.pop_aviso("Autenticação bem-sucedida!")
+            self.pop_aviso("Authentication successful!")
+            self.autentication = True
             # self.pushButtonNext.setEnabled(True)
             self.tabWidget.setCurrentIndex(1)
             print("Authentication successful!")
 
         except ee.EEException as e:
             if "Earth Engine client library not initialized" in str(e):
-                self.pop_aviso("Falha na autenticação. Por favor, autentique-se.")
+                self.pop_aviso("Authentication failed. Please authenticate.")
                 print("Authentication failed. Please authenticate.")
                 ee.Authenticate()
                 ee.Initialize()  # Retry after authentication
@@ -330,10 +366,10 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         # Check if the credentials file exists and delete it
         if os.path.exists(credentials_path):
             os.remove(credentials_path)
-            self.pop_aviso("Autenticação do Earth Engine limpa com sucesso")
+            self.pop_aviso('Tolken cleared successfully.')
             print("Earth Engine authentication cleared successfully.")
         else:
-            self.pop_aviso("Nenhuma credencial do Earth Engine encontrada para limpar.")
+            self.pop_aviso("No Earth Engine credentials found to clear.")
             print("No Earth Engine credentials found to clear.")
 
     def pop_aviso(self, aviso):
@@ -395,6 +431,8 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.aoi = ee.FeatureCollection([feature])
 
                 print("AOI defined successfully.")
+                self.aio_set = True
+                self.check_next_button()
             else:
                 print("The geometry is not a valid type (Polygon or MultiPolygon).")
         else:
@@ -402,14 +440,17 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
 
 
     def elevacao_clicked(self):
-
         aoi = self.aoi  # Assuming 'self.aoi' holds the Earth Engine FeatureCollection
 
         DEM_source_key = self.dem_dataset_combobox.currentText()
         DEM_source_id = self.dem_datasets[DEM_source_key]["ID"]
         DEM_resolution = int(self.dem_resolution_combobox.currentText())
-        print(f"Selected DEM source: {DEM_source_key} ({DEM_source_id})", DEM_resolution    )
+        print(f"Selected DEM source: {DEM_source_key} ({DEM_source_id})", DEM_resolution)
 
+        # Replace invalid characters in DEM source ID for filenames
+        safe_dem_source_id = DEM_source_id.replace("/", "_").replace("\\", "_")
+
+        # Fetch DEM image based on selected source
         if DEM_source_id == 'COPERNICUS/DEM/GLO30':
             dem = ee.ImageCollection(DEM_source_id).select('DEM').mosaic().clip(aoi)
         elif DEM_source_id == 'JAXA/ALOS/AW3D30/V3_2':
@@ -421,7 +462,6 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         elif DEM_source_id == 'ASTER/ASTGTM':
             dem = ee.Image(DEM_source_id).select('elevation').clip(aoi)
         else:
-            # Default handling for other DEMs
             dem = ee.Image(DEM_source_id).clip(aoi).select('elevation')
 
         try:
@@ -431,19 +471,51 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
                 'format': 'GeoTIFF'
             })
 
-            base_file_name = 'elevation_profile'
+            # Include DEM source ID in file name, replacing invalid characters
+            base_file_name = f'elevation_profile_{safe_dem_source_id}'
             output_file = self.get_unique_filename(base_file_name)
-            
 
             response = requests.get(url)
-            with open(output_file, 'wb') as file:
-                file.write(response.content)
-            print(f"DEM image downloaded as {output_file}")
+            if response.status_code == 200:
+                with open(output_file, 'wb') as file:
+                    file.write(response.content)
+                print(f"DEM image downloaded as {output_file}")
+            else:
+                print(f"Failed to download DEM image: {response.status_code}")
+                return
 
         except Exception as e:
             print(f"Error during download: {e}")
             return
 
-        raster_layer = QgsRasterLayer(output_file, "Elevation Layer - "+DEM_source_id)
-        QgsProject.instance().addMapLayer(raster_layer)
+        # Load the vector layer for clipping
+        vector_layer = QgsVectorLayer(self.selected_aio_layer_path, "Vector Layer", "ogr")
 
+        if not vector_layer.isValid():
+            print(f"Error: Vector layer '{self.selected_aio_layer_path}' is invalid.")
+            return
+
+        # Generate a unique name for the clipped output, including DEM source ID
+        output_path = self.get_unique_filename(f'clipped_elevation_{safe_dem_source_id}')
+
+        # Clip the raster using the vector layer
+        try:
+            processing.run("gdal:cliprasterbymasklayer", {
+                'INPUT': output_file,
+                'MASK': vector_layer,
+                'NODATA': -9999,  # Ensure this is the right value for your dataset
+                'CROP_TO_CUTLINE': True,
+                'OUTPUT': output_path
+            })
+            print(f"Clipped raster saved to: {output_path}")
+
+            # Load and add the clipped raster to the map canvas
+            clipped_raster_layer = QgsRasterLayer(output_path, self.vector_layer_combobox.currentText() + f' - {safe_dem_source_id}')
+            if clipped_raster_layer.isValid():
+                QgsProject.instance().addMapLayer(clipped_raster_layer)
+                print("Clipped raster added to canvas.")
+            else:
+                print("Failed to load clipped raster.")
+
+        except Exception as e:
+            print(f"Error during clipping: {str(e)}")
