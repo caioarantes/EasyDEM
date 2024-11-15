@@ -10,6 +10,7 @@
         git sha              : $Format:%H$
         copyright            : (C) 2024 by Caio Arantes
         email                : caiosimplicioarantes@gmail.com
+        ICON SOURCE: <a href="https://www.flaticon.com/free-icons/topography" title="topography icons">Topography icons created by Freepik - Flaticon</a>
  ***************************************************************************/
 
 /***************************************************************************
@@ -45,6 +46,7 @@ from qgis.core import QgsProject, QgsMapLayer
 
 import os
 import sys 
+import subprocess
 import platform
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
@@ -82,42 +84,50 @@ from qgis.PyQt.QtCore import QVariant
 from qgis.analysis import QgsNativeAlgorithms
 
 
-def install_whl():
-    plugin_dir = os.path.dirname(__file__)
-    whl_path = os.path.join(plugin_dir, 'earthengine_api-1.3.1-py3-none-any.whl')
-    
-    if os.path.exists(whl_path):
-        try:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', whl_path])
-            print("Installation successful.")
-        except subprocess.CalledProcessError as e:
-            print(f"Installation failed: {e}")
-    else:
-        print("Wheel file not found in the plugin folder.")
+import sys
+import importlib
 
+def install_earthengine_api():
+    try:
+        # Import pip directly and use its internal API
+        import pip
+        # Install the package
+        pip_args = ['install', 'earthengine-api==1.3.1']
+        pip.main(pip_args)
+        print("Earth Engine API installed successfully.")
+    except AttributeError:
+        # If pip.main is not available, use the newer pip API
+        from pip._internal.cli.main import main as pip_main
+        pip_main(['install', 'earthengine-api==1.3.1'])
+        print("Earth Engine API installed successfully.")
+    except Exception as e:
+        print(f"An error occurred during installation: {e}")
+
+# Check if the Earth Engine API is already installed
 try:
-    import ee
+    # import ee
+    importlib.import_module('ee')
     print("Earth Engine API is already installed.")
-except ImportError:
-    install_whl()
     import ee
-
-
+except ImportError:
+    print("Earth Engine API not found. Installing...")
+    install_earthengine_api()
+    # Reload the module after installation
+    try:
+        importlib.import_module('ee')
+        print("Earth Engine API imported successfully.")
+        import ee
+    except ImportError:
+        print("Earth Engine API could not be imported after installation.")
+        # self.pop_aviso('Error importing Earth Engine API after installation. Please install manually.')
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'easy_dialog_base.ui'))
 
-
 class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
-        """Constructor."""
         super(easydemDialog, self).__init__(parent)
-        # Set up the user interface from Designer through FORM_CLASS.
-        # After self.setupUi() you can access any designer object by doing
-        # self.<objectname>, and you can use autoconnect slots - see
-        # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
-        # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
 
         self.dem_datasets = {
@@ -190,7 +200,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.select_output_folder_button.clicked.connect(self.select_output_folder)
         self.load_vector_layers_button.clicked.connect(self.load_vector_layers)
         self.vector_layer_combobox.currentIndexChanged.connect(self.get_selected_layer_path)
-        self.autenticacao.clicked.connect(self.auth)
+        # self.autenticacao.clicked.connect(self.auth)
         self.autenticacao_teste.clicked.connect(self.auth_test)
         self.desautenticacao.clicked.connect(self.auth_clear)
         self.elevacao.clicked.connect(self.elevacao_clicked)
@@ -277,10 +287,10 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.dem_resolution_combobox.clear()
         self.dem_resolution_combobox.addItems([str(res) for res in self.dem_datasets[dem_name]["Resolution"]])
 
+    # def auth(self):
+    #     print('Autenticando...')
+    #     ee.Authenticate()
 
-    def auth(self):
-        print('Autenticando...')
-        ee.Authenticate()   
         
     def auth_test(self):
     # Attempt to initialize Earth Engine
