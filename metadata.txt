@@ -5,27 +5,27 @@
 [general]
 name=EasyDEM
 qgisMinimumVersion=3.0
-description=Get Digital Elevation Model (DEM) data from Google Earth Engine and plot as raster layer it contour lines, make elevation maps.
+description=Get Digital Elevation Model (DEM) datasets from multiple sources with Google Earth Engine API and plot it as raster layer.
 version=0.1
 author=Caio Arantes
-email=caiosimplicioarantes@gmail.com
+email=c168343@dac.unicamp.br
 
-about=Provide a brief description of the plugin and its purpose.
+about= Digital Elevation Model (DEM) datasets from multiple sources with Google Earth Engine API and plot it as raster layer, compare different datasets.
 
-tracker=http://bugs
-repository=http://repo
+tracker=https://github.com/caioarantes/qgis-EasyDEM-plugin
+repository=https://github.com/caioarantes/qgis-EasyDEM-plugin
 # End of mandatory metadata
 
-# Recommended items:
+# Recommended items: Set up Google Earth Engine acount link it google cloud project first
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-# changelog=
+# changelog=beta 0.1
 
 # Tags are comma separated with spaces allowed
 tags=python
 
-homepage=http://homepage
+homepage=https://github.com/caioarantes/qgis-EasyDEM-plugin
 category=Plugins
 icon=icon.png
 # experimental flag
@@ -40,7 +40,7 @@ deprecated=False
 # plugin_dependencies=
 
 Category of the plugin: Raster, Vector, Database or Web
-# category=
+# category=Database
 
 # If the plugin can run on QGIS Server.
 server=False
