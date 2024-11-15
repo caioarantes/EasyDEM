@@ -33,6 +33,57 @@ from PyQt5.QtWidgets import QDialog
 
 # QGIS modules
 from qgis.core import QgsProject, QgsMapLayer
+import geopandas as gpd
+import os
+import platform  # Add this line
+
+from qgis.PyQt import uic
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QDialog, QMessageBox, QApplication  # Add QMessageBox and QApplication
+
+# QGIS modules
+from qgis.core import QgsProject, QgsMapLayer
+
+import ee  # Add this line
+
+import os
+import sys 
+import platform
+from qgis.PyQt import uic
+from qgis.PyQt import QtWidgets
+from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
+import geopandas as gpd
+import requests
+from qgis.core import QgsRasterLayer, QgsProject, QgsRasterShader, QgsColorRampShader, QgsSingleBandPseudoColorRenderer, QgsStyle
+from qgis.PyQt.QtGui import QColor
+from qgis.core import QgsRasterLayer, QgsProject, QgsMapLayer, QgsVectorLayer,QgsSingleBandPseudoColorRenderer, QgsColorRampShader,QgsStyle, QgsColorRamp
+from PyQt5.QtWidgets import QGridLayout, QWidget, QDesktopWidget
+from qgis.core import QgsRasterLayer, QgsProject, QgsLayerTreeLayer
+from qgis.core import QgsCoordinateReferenceSystem
+from qgis.core import QgsCoordinateTransform
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QCheckBox, QDialogButtonBox
+from PyQt5.QtWidgets import QApplication, QDateEdit
+from PyQt5.QtCore import QDate
+from dateutil.relativedelta import relativedelta
+from qgis.core import QgsProject
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QDialog
+from qgis.utils import iface
+import pandas as pd
+import plotly.express as px
+import io
+from datetime import datetime, timedelta
+from PyQt5.QtWidgets import QPushButton
+import array
+import numpy as np
+from scipy.signal import savgol_filter
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from qgis import processing
+from qgis.PyQt.QtCore import QVariant
+from qgis.analysis import QgsNativeAlgorithms
+
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -120,6 +171,10 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.select_output_folder_button.clicked.connect(self.select_output_folder)
         self.load_vector_layers_button.clicked.connect(self.load_vector_layers)
         self.vector_layer_combobox.currentIndexChanged.connect(self.get_selected_layer_path)
+        self.autenticacao.clicked.connect(self.auth)
+        self.autenticacao_teste.clicked.connect(self.auth_test)
+        self.desautenticacao.clicked.connect(self.auth_clear)
+        self.elevacao.clicked.connect(self.elevacao_clicked)
 
     def update_dem_datasets(self):
         print(list(self.dem_datasets.keys()))
@@ -130,6 +185,27 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         folder = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Output Folder")
         if folder:
             self.output_folder_lineedit.setText(folder)
+
+    def get_unique_filename(self, base_file_name):
+        """
+        Generates a unique filename by checking if the file already exists
+        and adding a numerical suffix to it if needed.
+
+        Parameters:
+        base_file_name (str): The base filename to use.
+
+        Returns:
+        str: The unique filename.
+        """
+        output_file = self.output_folder_lineedit.text()+f'/{base_file_name}.tif'
+        counter = 1
+
+        while os.path.exists(output_file):
+            output_file = f'{base_file_name}_{counter}.tif'
+            counter += 1
+
+        print(f"Unique filename: {output_file}")
+        return output_file
 
     def load_vector_layers(self) -> None:
         layers = QgsProject.instance().mapLayers().values()
@@ -163,6 +239,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
             
             if '.shp' in layer.dataProvider().dataSourceUri():
                 self.selected_aio_layer_path = layer.dataProvider().dataSourceUri()
+                self.load_vector_function()
                 #enable next
                 return None
             else:
@@ -181,4 +258,198 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.dem_resolution_combobox.clear()
         self.dem_resolution_combobox.addItems([str(res) for res in self.dem_datasets[dem_name]["Resolution"]])
 
+
+    def auth(self):
+        print('Autenticando...')
+        ee.Authenticate()   
+        
+    def auth_test(self):
+    # Attempt to initialize Earth Engine
+        try:
+            ee.Authenticate()
+            ee.Initialize()
+            self.pop_aviso("Autenticação bem-sucedida!")
+            # self.pushButtonNext.setEnabled(True)
+            self.tabWidget.setCurrentIndex(1)
+            print("Authentication successful!")
+
+        except ee.EEException as e:
+            if "Earth Engine client library not initialized" in str(e):
+                self.pop_aviso("Falha na autenticação. Por favor, autentique-se.")
+                print("Authentication failed. Please authenticate.")
+                ee.Authenticate()
+                ee.Initialize()  # Retry after authentication
+            else:
+                print(f"An error occurred: {e}")
+
+    def auth_clear(self):
+        print('Desautenticando...')
+        """Clears the Earth Engine authentication by deleting the credentials file."""
+        
+        system = platform.system()
+        
+        # Set the path for Earth Engine credentials based on the operating system
+        if system == 'Windows':
+            credentials_path = os.path.join(os.environ['USERPROFILE'], '.config', 'earthengine', 'credentials')
+        elif system == 'Linux':
+            credentials_path = os.path.join(os.environ['HOME'], '.config', 'earthengine', 'credentials')
+        elif system == 'Darwin':  # MacOS
+            credentials_path = os.path.join(os.environ['HOME'], 'Library', 'Application Support', 'earthengine', 'credentials')
+        else:
+            raise Exception(f"Unsupported operating system: {system}")
+
+        # Check if the credentials file exists and delete it
+        if os.path.exists(credentials_path):
+            os.remove(credentials_path)
+            self.pop_aviso("Autenticação do Earth Engine limpa com sucesso")
+            print("Earth Engine authentication cleared successfully.")
+        else:
+            self.pop_aviso("Nenhuma credencial do Earth Engine encontrada para limpar.")
+            print("No Earth Engine credentials found to clear.")
+
+    def pop_aviso(self, aviso):
+        QApplication.restoreOverrideCursor()
+        msg = QMessageBox(parent=self)
+        msg.setWindowTitle("Alerta!")
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText(aviso)
+        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)  # Add Ok and Cancel buttons
+
+        ret = msg.exec_()  # Get the result of the dialog
+
+        if ret == QMessageBox.Ok:
+            
+            # Handle Ok button click
+            print("Ok button clicked")
+            # Add your code here for what to do when Ok is clicked
+            return True
+        elif ret == QMessageBox.Cancel:
+            
+            # Handle Cancel button click
+            print("Cancel button clicked")
+            # Add your code here for what to do when Cancel is clicked
+            return False
     
+    def load_vector_function(self):
+        shapefile_path = self.selected_aio_layer_path
+        gdf = gpd.read_file(shapefile_path)
+
+        # Check if there is at least one geometry in the GeoDataFrame
+        if not gdf.empty:
+            # If the GeoDataFrame contains multiple geometries, dissolve them into one
+            if len(gdf) > 1:
+                self.aoi = gdf.dissolve()
+            else:
+                self.aoi = gdf
+
+            # Extract the first geometry from the dissolved GeoDataFrame
+            geometry = self.aoi.geometry.iloc[0]
+
+            # Check if the geometry is a Polygon or MultiPolygon
+            if geometry.geom_type in ['Polygon', 'MultiPolygon']:
+                # Convert the geometry to GeoJSON format
+                geojson = geometry.__geo_interface__
+
+                # Remove the third dimension from the coordinates
+                if geojson['type'] == 'Polygon':
+                    geojson['coordinates'] = [list(map(lambda coord: coord[:2], ring)) for ring in geojson['coordinates']]
+                elif geojson['type'] == 'MultiPolygon':
+                    geojson['coordinates'] = [[list(map(lambda coord: coord[:2], ring)) for ring in polygon] for polygon in geojson['coordinates']]
+
+                # Create an Earth Engine geometry object from the GeoJSON coordinates
+                ee_geometry = ee.Geometry(geojson)
+
+                # Convert the Earth Engine geometry to a Feature
+                feature = ee.Feature(ee_geometry)
+
+                # Create a FeatureCollection with the feature
+                self.aoi = ee.FeatureCollection([feature])
+
+                print("AOI defined successfully.")
+            else:
+                print("The geometry is not a valid type (Polygon or MultiPolygon).")
+        else:
+            print("The shapefile does not contain any geometries.")
+
+
+    def elevacao_clicked(self):
+
+        aoi = self.aoi  # Assuming 'self.aoi' holds the Earth Engine FeatureCollection
+
+        DEM_source_key = self.dem_dataset_combobox.currentText()
+        DEM_source_id = self.dem_datasets[DEM_source_key]["ID"]
+        DEM_resolution = int(self.dem_resolution_combobox.currentText())
+        print(f"Selected DEM source: {DEM_source_key} ({DEM_source_id})", DEM_resolution    )
+
+        # Fetch and download DEM data
+        try:
+            dem = ee.Image(DEM_source_id).clip(aoi).select('elevation')
+        except Exception as e:
+            print(f"Error fetching DEM data: {e}")
+            return
+
+        try:
+            url = dem.getDownloadUrl({
+                'scale': DEM_resolution,
+                'region': aoi.geometry().bounds().getInfo(),
+                'format': 'GeoTIFF'
+            })
+
+            base_file_name = 'elevation_profile.tif'
+            output_file = self.get_unique_filename(base_file_name)
+            
+
+            response = requests.get(url)
+            with open(output_file, 'wb') as file:
+                file.write(response.content)
+            print(f"DEM image downloaded as {output_file}")
+
+        except Exception as e:
+            print(f"Error during download: {e}")
+            return
+
+        raster_path = output_file
+        shp_path = self.selected_aio_layer_path  # Assuming you have this path set up
+        clipped_dem_path = self.get_unique_filename('clipped_dem.tif')
+
+        raster_layer = QgsRasterLayer(raster_path, "Elevation Layer")
+        vector_layer = QgsVectorLayer(shp_path, "Vector Layer", "ogr")
+
+        if not raster_layer.isValid():
+            print(f"Error loading raster: {raster_path}")
+            return
+        if not vector_layer.isValid():
+            print(f"Error loading vector: {shp_path}")
+            return
+
+ 
+        # Clip DEM to AOI
+        processing.run("gdal:cliprasterbymasklayer", {
+            'INPUT': raster_layer,
+            'MASK': vector_layer,
+            'NODATA': -9999,
+            'CROP_TO_CUTLINE': True,
+            'OUTPUT': clipped_dem_path
+        })
+        print(f"Clipped DEM saved to: {clipped_dem_path}")
+
+        clipped_raster_layer = QgsRasterLayer(clipped_dem_path, 'Elevation Profile')
+        if clipped_raster_layer.isValid():
+            QgsProject.instance().addMapLayer(clipped_raster_layer)
+            print("Clipped DEM added to canvas")
+        else:
+            print("Failed to load clipped DEM")
+
+        # Generate contours using gdal:contour
+        contours_gdal_path = self.get_unique_filename('contours_gdal.shp')
+        gdal_params = {
+            'INPUT': clipped_dem_path,
+            'BAND': 1,
+            'INTERVAL': 10,  # Contour interval
+            'FIELD_NAME': 'elevation',
+            'CREATE_3D': False,
+            'IGNORE_NODATA': True,
+            'NODATA': -9999,
+            'OUTPUT': contours_gdal_path
+        }
+            

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>423</width>
+    <width>431</width>
     <height>319</height>
    </rect>
   </property>
@@ -23,8 +23,88 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
+   <widget class="QWidget" name="tab_3">
+    <attribute name="title">
+     <string>GEE Authentication</string>
+    </attribute>
+    <widget class="QPushButton" name="autenticacao">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>180</y>
+       <width>241</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Authenticate (it will open the browser)</string>
+     </property>
+    </widget>
+    <widget class="QTextEdit" name="textEdit">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>20</y>
+       <width>421</width>
+       <height>111</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_5">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>160</y>
+       <width>281</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>1ª Step (Google Eeath Engine Authentication)</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_6">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>230</y>
+       <width>271</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>2ª Step (After confimation of step 1):</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="autenticacao_teste">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>250</y>
+       <width>241</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Retrive authentication key</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="desautenticacao">
+     <property name="geometry">
+      <rect>
+       <x>260</x>
+       <y>250</y>
+       <width>141</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Reset authentication</string>
+     </property>
+    </widget>
+   </widget>
    <widget class="QWidget" name="tab">
     <attribute name="title">
      <string>Tab 1</string>
@@ -101,7 +181,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>Select area of interst (vector layer)</string>
+      <string>Select area of interest (vector layer):</string>
      </property>
     </widget>
    </widget>
@@ -185,6 +265,19 @@
      </property>
      <property name="text">
       <string>Next</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="elevacao">
+     <property name="geometry">
+      <rect>
+       <x>200</x>
+       <y>260</y>
+       <width>75</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>run</string>
      </property>
     </widget>
    </widget>
