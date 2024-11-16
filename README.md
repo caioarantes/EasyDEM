@@ -47,7 +47,7 @@
 
 4. Click `Install`.
 
-5. Click `Restart QGIS`.
+5. MUSUT DO: `Restart QGIS`.
 
 --
 

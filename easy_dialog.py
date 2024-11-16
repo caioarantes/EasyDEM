@@ -265,7 +265,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         counter = 1
 
         while os.path.exists(output_file):
-            output_file = f'{base_file_name}_{counter}.tif'
+            output_file = self.output_folder +f'/{base_file_name}_{counter}.tif'
             counter += 1
 
         print(f"Unique filename: {output_file}")

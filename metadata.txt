@@ -12,11 +12,11 @@ email=c168343@dac.unicamp.br
 
 about= Digital Elevation Model (DEM) datasets from multiple sources with Google Earth Engine API and plot it as raster layer, compare different datasets.
 
-tracker=https://github.com/caioarantes/qgis-EasyDEM-plugin
+tracker=https://github.com/caioarantes/qgis-EasyDEM-plugin/issues
 repository=https://github.com/caioarantes/qgis-EasyDEM-plugin
 # End of mandatory metadata
 
-# Recommended items: Set up Google Earth Engine acount link it google cloud project first
+# Recommended items: A Google Earth Engine account linked to a Cloud Project is required.
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
@@ -25,7 +25,7 @@ hasProcessingProvider=no
 # Tags are comma separated with spaces allowed
 tags=python
 
-homepage=https://github.com/caioarantes/qgis-EasyDEM-plugin
+homepage=https://caioarantes.github.io/EasyDEM.github.io/
 category=Plugins
 icon=icon.png
 # experimental flag
