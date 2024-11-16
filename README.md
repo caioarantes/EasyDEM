@@ -61,7 +61,7 @@
 
 2.  **Access DEM Data**: Open the plugin toolbar or icon, authenticate your GEE account, choose your area of interest (vector layer), output folder, the desired DEM dataset from Google Earth Engine, and load it directly into your QGIS workspace.
 
-4.  **Exported Data**: Download DEM data will be in the selected output folder.
+4.  **Exported Data**: Downloaded elevation layer will be in the selected output folder.
   
   
 
