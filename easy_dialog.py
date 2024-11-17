@@ -82,6 +82,9 @@ from plotly.subplots import make_subplots
 from qgis import processing
 from qgis.PyQt.QtCore import QVariant
 from qgis.analysis import QgsNativeAlgorithms
+import geopandas as gpd
+import zipfile
+import os
 
 
 import sys
@@ -206,7 +209,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # Call update_dem_datasets after initialization to avoid accessing dem_datasets before it's defined.
         self.update_dem_datasets()
-        self.load_vector_layers()
+        #self.load_vector_layers()
         self.dem_dataset_combobox.currentIndexChanged.connect(self.update_dem_info)
         self.load_vector_layers_button.clicked.connect(self.load_vector_layers)
         self.vector_layer_combobox.currentIndexChanged.connect(self.get_selected_layer_path)
@@ -226,6 +229,9 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         
         if index == 1 and (self.autentication == False):
             self.tabWidget.setCurrentIndex(0)
+
+        if index == 1:
+            self.load_vector_layers()
 
 
     def next_button_clicked(self):
@@ -299,16 +305,34 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         layer = QgsProject.instance().mapLayer(layer_id)
         if layer:
             print(f"Layer found: {layer.name()}, ID: {layer_id}")  # Debug: Confirm layer is found
-            print(f"Layer data provider: {layer.dataProvider().dataSourceUri()}")
-            
-            if '.shp' in layer.dataProvider().dataSourceUri():
-                self.selected_aio_layer_path = layer.dataProvider().dataSourceUri()
+            print(f"Layer data provider: {layer.dataProvider().dataSourceUri().split('|')[0]}")  # Debug: Show layer data source URI
+
+            shapefile_extensions = [
+                ".shp",  # Geometry (main file)
+                ".shx",  # Index (spatial indexing)
+                ".dbf",  # Attribute data (DBF format)
+                ".prj",  # Projection (coordinate reference system)
+                ".sbn",  # Spatial index (optional, used by some GIS software)
+                ".sbx",  # Spatial index auxiliary file (optional)
+                ".xml",  # Metadata (optional)
+                ".cpg",  # Character encoding file (optional)
+                ".mif",  # MapInfo Interchange Format (non-standard)
+                ".shp.xml",  # XML metadata (non-standard)
+                '.kmz',  # Keyhole Markup Language (non-standard)
+                '.gdb',  # Geodatabase (non-standard)
+            ]
+
+            # Check if the layer's data source URI contains any of the shapefile extensions
+            if any(ext in layer.dataProvider().dataSourceUri().lower() for ext in shapefile_extensions):
+                self.selected_aio_layer_path = layer.dataProvider().dataSourceUri().split('|')[0]
+                print(f"Selected layer path: {self.selected_aio_layer_path}")
                 self.load_vector_function()
-                #enable next
+                # Enable next
                 return None
             else:
                 print(f"Layer '{layer_name}' is not a shapefile.")
                 return None
+
 
         else:
             print(f"Layer '{layer_name}' with ID '{layer_id}' not found in the project.")
@@ -395,17 +419,52 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
             # Add your code here for what to do when Cancel is clicked
             return False
     
+
+
     def load_vector_function(self):
         shapefile_path = self.selected_aio_layer_path
-        gdf = gpd.read_file(shapefile_path)
+        
+        # Check if the path is a .zip file
+        if shapefile_path.endswith('.zip'):
+            # Try to read shapefile from a zip archive
+            try:
+                # Check if the .zip file exists and open it
+                with zipfile.ZipFile(shapefile_path, 'r') as zip_ref:
+                    zip_ref.printdir()  # Optional: Print contents of the zip to debug
+                    # Try to find the .shp file inside the zip
+                    shapefile_found = False
+                    for file in zip_ref.namelist():
+                        if file.endswith('.shp'):
+                            shapefile_found = True
+                            shapefile_within_zip = file
+                            break
+                    
+                    if shapefile_found:
+                        # Read shapefile directly from the zip file
+                        self.aoi = gpd.read_file(f'zip://{shapefile_path}/{shapefile_within_zip}')
+                        print(f"Successfully loaded shapefile from {shapefile_path}.")
+                    else:
+                        print("No .shp file found inside the zip archive.")
+                        return
+            except Exception as e:
+                print(f"Error reading shapefile from zip archive: {e}")
+                return
 
-        # Check if there is at least one geometry in the GeoDataFrame
-        if not gdf.empty:
+        else:
+            # If not a .zip, assume it is a regular shapefile
+            try:
+                # Read the shapefile normally
+                self.aoi = gpd.read_file(shapefile_path)
+                print(f"Successfully loaded shapefile from {shapefile_path}.")
+            except Exception as e:
+                print(f"Error reading shapefile: {e}")
+                return
+        
+        # After loading, check if the GeoDataFrame is not empty
+        if not self.aoi.empty:
             # If the GeoDataFrame contains multiple geometries, dissolve them into one
-            if len(gdf) > 1:
-                self.aoi = gdf.dissolve()
-            else:
-                self.aoi = gdf
+            if len(self.aoi) > 1:
+                self.aoi = self.aoi.dissolve()
 
             # Extract the first geometry from the dissolved GeoDataFrame
             geometry = self.aoi.geometry.iloc[0]
@@ -415,7 +474,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
                 # Convert the geometry to GeoJSON format
                 geojson = geometry.__geo_interface__
 
-                # Remove the third dimension from the coordinates
+                # Remove the third dimension from the coordinates if it exists
                 if geojson['type'] == 'Polygon':
                     geojson['coordinates'] = [list(map(lambda coord: coord[:2], ring)) for ring in geojson['coordinates']]
                 elif geojson['type'] == 'MultiPolygon':
@@ -437,6 +496,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
                 print("The geometry is not a valid type (Polygon or MultiPolygon).")
         else:
             print("The shapefile does not contain any geometries.")
+
 
 
     def elevacao_clicked(self):
