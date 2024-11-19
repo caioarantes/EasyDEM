@@ -5,12 +5,12 @@
 [general]
 name=EasyDEM
 qgisMinimumVersion=3.0
-description=Get Digital Elevation Model (DEM) datasets from multiple sources with Google Earth Engine API and plot it as raster layer.
-version=0.1
+description=Get Digital Elevation Model (DEM) datasets from multiple sources with Google Earth Engine API and load it as raster layer.
+version=0.2
 author=Caio Arantes
 email=c168343@dac.unicamp.br
 
-about= Digital Elevation Model (DEM) datasets from multiple sources with Google Earth Engine API and plot it as raster layer, compare different datasets.
+about= Digital Elevation Model (DEM) datasets from multiple sources with Google Earth Engine API and load it as raster layer, compare different datasets.
 
 tracker=https://github.com/caioarantes/qgis-EasyDEM-plugin/issues
 repository=https://github.com/caioarantes/qgis-EasyDEM-plugin
