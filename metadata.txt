@@ -6,7 +6,7 @@
 name=EasyDEM
 qgisMinimumVersion=3.0
 description=Get Digital Elevation Model (DEM) datasets from multiple sources with Google Earth Engine API and load it as raster layer.
-version=0.2
+version=1.0
 author=Caio Arantes
 email=c168343@dac.unicamp.br
 
@@ -29,7 +29,7 @@ homepage=https://caioarantes.github.io/EasyDEM.github.io/
 category=Plugins
 icon=icon.png
 # experimental flag
-experimental=True
+experimental=False
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
