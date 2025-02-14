@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyDEM QGIS Plugin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f9f9f9;
+        }
+        .container {
+            width: 80%;
+            max-width: 900px;
+            background: #ffffff;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo {
+            width: 50px;
+            height: auto;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        .download-button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .download-button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">
+            <img src="./index_files/icon.png" alt="EasyDEM Logo" class="logo">
+            <h1>EasyDEM</h1>
+        </div>
+
+        <p><strong>EasyDEM</strong> - A QGIS Plugin for Accessing Multiple Digital Elevation Models (DEMs) through the Google Earth Engine API.</p>
+
+        <hr>
+
+        <h2>Features</h2>
+        <ul>
+            <li><strong>Access Multiple DEM Datasets</strong>: Easily access and visualize various DEM datasets from Google Earth Engine (GEE) catalogs, including:
+                <ol>
+                    <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_NASADEM_HGT_001">NASA/NASADEM_HGT/001</a></li>
+                    <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_ASTER_GED_AG100_003">NASA/ASTER_GED/AG100_003</a></li>
+                    <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_DEM_GLO30">COPERNICUS/DEM/GLO30</a></li>
+                    <li><a href="https://developers.google.com/earth-engine/datasets/catalog/JAXA_ALOS_AW3D30_V3_2">JAXA/ALOS/AW3D30/V3_2</a></li>
+                    <li><a href="https://developers.google.com/earth-engine/datasets/catalog/USGS_GMTED2010_FULL">USGS/GMTED2010_FULL</a></li>
+                </ol>
+            </li>
+            <li><strong>Seamless Integration</strong>: Directly access and load DEM data into QGIS for immediate use in your projects.</li>
+        </ul>
+
+        <hr>
+
+        <h2>Installation</h2>
+        <h3>From QGIS Plugin Manager</h3>
+        <ol>
+            <li>Open QGIS.</li>
+            <li>Navigate to <code>Plugins</code> &gt; <code>Manage and Install Plugins</code>.</li>
+            <li>Search for <strong>EasyDEM</strong>.</li>
+            <li>Click <strong>Install</strong>.</li>
+            <li>MUST DO: <strong>Restart QGIS</strong>.</li>
+        </ol>
+            <li><strong>Access DEM Data:</strong> Open the plugin toolbar or icon, authenticate your GEE account, choose your area of interest (vector layer), output folder, the desired DEM dataset from Google Earth Engine, and load it directly into your QGIS workspace.</li>
+            <li><strong>Exported Data:</strong> Downloaded DEM data will be in the selected output folder.</li>
+        </ol>
+
+        <h3>Step-by-Step Guide</h3>
+        <ol>
+            <li><strong>Initial Setup:</strong></li>
+            <img src="./index_files/1.png" alt="Initial Setup Screenshot">
+
+            <li><strong>Area of Interest Selection:</strong></li>
+            <img src="./index_files/2.png" alt="Area of Interest Selection Screenshot">
+
+            <li><strong>DEM Dataset Selection:</strong></li>
+            <img src="./index_files/3.png" alt="DEM Dataset Selection Screenshot">
+        </ol>
+
+        <hr>
+
+        <h2>License</h2>
+        <p><strong>The EasyDEM QGIS plugin is licensed under the MIT License.</strong></p>
+        <pre><code>

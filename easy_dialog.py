@@ -24,105 +24,156 @@
 """
 
 import os
+import sys
+import subprocess
+import platform
+import zipfile
+import shutil  # Import for auth_clear
+from qgis.utils import iface
+import qgis
+from qgis.core import (
+    QgsProject, QgsRasterLayer, QgsRasterShader, QgsColorRampShader, 
+    QgsSingleBandPseudoColorRenderer, QgsStyle, QgsRasterBandStats, 
+    QgsMapLayer, QgsVectorLayer, QgsColorRamp, QgsLayerTreeLayer, 
+    QgsCoordinateReferenceSystem, QgsCoordinateTransform, 
+    QgsMultiBandColorRenderer, QgsContrastEnhancement, 
+    QgsProcessingFeedback, QgsApplication, QgsRectangle, 
+    QgsFeature, QgsGeometry, QgsField, QgsVectorFileWriter,
+)
+from qgis.utils import iface
+import qgis
 
-from qgis.PyQt import uic
+import importlib
+import urllib.request
+import json
+import sys
+
+def get_installed_version():
+    """Return the installed Earth Engine API version, or None if not installed."""
+    try:
+        import ee
+        return ee.__version__
+    except ImportError:
+        return None
+
+def get_latest_version():
+    """Query PyPI for the latest Earth Engine API version."""
+    try:
+        url = "https://pypi.org/pypi/earthengine-api/json"
+        with urllib.request.urlopen(url) as response:
+            data = json.load(response)
+        return data["info"]["version"]
+    except Exception as e:
+        print("Error fetching latest version from PyPI:", e)
+        return None
+
+def install_earthengine_api():
+    """Install or upgrade the Earth Engine API to the latest version using pip's internal API."""
+    try:
+        # Attempt to use pip.main (for older pip versions)
+        import pip
+        print("Using pip version:", pip.__version__)
+        pip_args = ['install', '--upgrade', 'earthengine-api']
+        pip.main(pip_args)
+        print("Earth Engine API installed/upgraded successfully (using pip.main).")
+    except AttributeError:
+        # Fallback for newer pip versions that do not expose pip.main
+        try:
+            from pip._internal.cli.main import main as pip_main
+            pip_main(['install', '--upgrade', 'earthengine-api'])
+            print("Earth Engine API installed/upgraded successfully (using pip._internal).")
+        except Exception as e:
+            print("An error occurred during installation:", e)
+    except Exception as e:
+        print("An error occurred during installation:", e)
+
+# Determine installed and latest versions.
+installed_version = get_installed_version()
+latest_version = get_latest_version()
+
+if installed_version:
+    print("Installed Earth Engine API version:", installed_version)
+else:
+    print("Earth Engine API is not installed.")
+
+if latest_version:
+    print("Latest Earth Engine API version available on PyPI:", latest_version)
+else:
+    print("Could not determine the latest Earth Engine API version from PyPI.")
+
+# If there's no installation or the installed version differs from the latest, install/upgrade.
+if (installed_version is None) or (latest_version is not None and installed_version != latest_version):
+    print("Upgrading/Installing Earth Engine API to the latest version...")
+    install_earthengine_api()
+    # Invalidate caches so that the newly installed package is found.
+    importlib.invalidate_caches()
+else:
+    print("Latest version is already installed. Importing Earth Engine API...")
+
+# Import the Earth Engine API and print its version.
+try:
+    importlib.import_module('ee')
+    import ee
+    print("Final Earth Engine API version:", ee.__version__)
+except ImportError:
+    print("Earth Engine API could not be imported after installation.")
+
+import os
+from PyQt5 import uic
+from PyQt5.QtCore import QSettings
 
 # PyQt5 modules
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import (
+    QDialog,
+    QMessageBox,
+    QFileDialog,
+    QApplication,
+    QGridLayout,
+    QWidget,
+    QDesktopWidget,
+    QVBoxLayout,
+    QCheckBox,
+    QDialogButtonBox,
+    QPushButton,
+    QLineEdit,
+)
+from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtGui import QColor
 
 # QGIS modules
-from qgis.core import QgsProject, QgsMapLayer
-import geopandas as gpd
-import os
-import platform  # Add this line
-
+from qgis.core import (
+    QgsProject,
+    QgsMapLayer,
+    QgsRasterLayer,
+    QgsVectorLayer,
+    QgsRasterShader,
+    QgsColorRampShader,
+    QgsSingleBandPseudoColorRenderer,
+    QgsStyle,
+    QgsColorRamp,
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
+    QgsLayerTreeLayer,
+)
+from qgis.utils import iface
+from qgis import processing
 from qgis.PyQt import uic
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QDialog, QMessageBox, QApplication  # Add QMessageBox and QApplication
+from qgis.PyQt.QtCore import QVariant
+from qgis.analysis import QgsNativeAlgorithms
 
-# QGIS modules
-from qgis.core import QgsProject, QgsMapLayer
-
-import os
-import sys 
-import subprocess
-import platform
-from qgis.PyQt import uic
-from qgis.PyQt import QtWidgets
-from PyQt5.QtWidgets import QApplication, QMessageBox, QFileDialog
+# Third-party modules
 import geopandas as gpd
 import requests
-from qgis.core import QgsRasterLayer, QgsProject, QgsRasterShader, QgsColorRampShader, QgsSingleBandPseudoColorRenderer, QgsStyle
-from qgis.PyQt.QtGui import QColor
-from qgis.core import QgsRasterLayer, QgsProject, QgsMapLayer, QgsVectorLayer,QgsSingleBandPseudoColorRenderer, QgsColorRampShader,QgsStyle, QgsColorRamp
-from PyQt5.QtWidgets import QGridLayout, QWidget, QDesktopWidget
-from qgis.core import QgsRasterLayer, QgsProject, QgsLayerTreeLayer
-from qgis.core import QgsCoordinateReferenceSystem
-from qgis.core import QgsCoordinateTransform
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QCheckBox, QDialogButtonBox
-from PyQt5.QtWidgets import QApplication, QDateEdit
-from PyQt5.QtCore import QDate
-from dateutil.relativedelta import relativedelta
-from qgis.core import QgsProject
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog
-from qgis.utils import iface
 import pandas as pd
-import plotly.express as px
-import io
-from datetime import datetime, timedelta
-from PyQt5.QtWidgets import QPushButton
-import array
-import numpy as np
-from scipy.signal import savgol_filter
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from qgis import processing
-from qgis.PyQt.QtCore import QVariant
-from qgis.analysis import QgsNativeAlgorithms
-import geopandas as gpd
-import zipfile
-import os
-
-
-import sys
+import numpy as np
+from scipy.signal import savgol_filter
+import dateutil.relativedelta
+from datetime import datetime, timedelta
 import importlib
-
-def install_earthengine_api():
-    try:
-        # Import pip directly and use its internal API
-        import pip
-        # Install the package
-        pip_args = ['install', 'earthengine-api==1.3.1']
-        pip.main(pip_args)
-        print("Earth Engine API installed successfully.")
-    except AttributeError:
-        # If pip.main is not available, use the newer pip API
-        from pip._internal.cli.main import main as pip_main
-        pip_main(['install', 'earthengine-api==1.3.1'])
-        print("Earth Engine API installed successfully.")
-    except Exception as e:
-        print(f"An error occurred during installation: {e}")
-
-# Check if the Earth Engine API is already installed
-try:
-    # import ee
-    importlib.import_module('ee')
-    print("Earth Engine API is already installed.")
-    import ee
-except ImportError:
-    print("Earth Engine API not found. Installing...")
-    install_earthengine_api()
-    # Reload the module after installation
-    try:
-        importlib.import_module('ee')
-        print("Earth Engine API imported successfully.")
-        import ee
-    except ImportError:
-        print("Earth Engine API could not be imported after installation.")
-        # self.pop_aviso('Error importing Earth Engine API after installation. Please install manually.')
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -213,13 +264,87 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.dem_dataset_combobox.currentIndexChanged.connect(self.update_dem_info)
         self.load_vector_layers_button.clicked.connect(self.load_vector_layers)
         self.vector_layer_combobox.currentIndexChanged.connect(self.get_selected_layer_path)
-        # self.autenticacao.clicked.connect(self.auth)
-        self.autenticacao_teste.clicked.connect(self.auth_test)
+        self.autenticacao.clicked.connect(self.auth)
         self.desautenticacao.clicked.connect(self.auth_clear)
         self.elevacao.clicked.connect(self.elevacao_clicked)
         self.mQgsFileWidget.fileChanged.connect(self.on_file_changed)
         self.pushButtonNext.clicked.connect(self.next_button_clicked)
         self.tabWidget.currentChanged.connect(self.on_tab_changed)
+
+        self.project_QgsPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.Normal)
+
+        # Ensure this sets up self.project_QgsPasswordLineEdit (or rename to something like self.projectIdLineEdit)
+        self.loadProjectId()
+        # Connect the textChanged signal to automatically save changes.
+        self.project_QgsPasswordLineEdit.textChanged.connect(self.autoSaveProjectId)
+
+    def next_clicked(self):
+        self.tabWidget.setCurrentIndex((self.tabWidget.currentIndex() + 1) % self.tabWidget.count())
+
+    def back_clicked(self):
+        self.tabWidget.setCurrentIndex((self.tabWidget.currentIndex() - 1) % self.tabWidget.count())
+
+    def load_path_sugestion(self):
+        """
+        Load the path suggestion based on the user's operating system.
+        """
+        system = platform.system()
+        if system == 'Windows':
+            self.output_folder = os.path.join(os.environ['USERPROFILE'], 'Downloads')
+        elif system == 'Linux':
+            self.output_folder = os.path.join(os.environ['HOME'], 'Downloads')
+        elif system == 'Darwin':  # MacOS
+            self.output_folder = os.path.join(os.environ['HOME'], 'Downloads')
+
+        # Pre-configure with a suggested directory
+        self.mQgsFileWidget.setFilePath(self.output_folder)
+
+    def loadProjectId(self):
+        """
+        Loads the saved project ID from QSettings and sets it in the widget.
+        This will run every time the plugin is opened.
+        """
+        settings = QSettings()
+        # Retrieve the project ID from QSettings. The key "MyPlugin/projectID" is arbitrary.
+        saved_project_id = settings.value("MyPlugin/projectID", "", type=str)
+        self.project_QgsPasswordLineEdit.setText(saved_project_id)
+        print("Loaded project ID:", saved_project_id)
+        self.autenticacao.setEnabled(bool(self.project_QgsPasswordLineEdit.text()))
+
+    def autoSaveProjectId(self, new_text):
+        """
+        Automatically saves the project ID to QSettings whenever the text changes.
+        This ensures that the project ID remains available even after QGIS is closed and reopened.
+        """
+        settings = QSettings()
+        settings.setValue("MyPlugin/projectID", new_text)
+        print("Project ID auto-saved:", new_text)
+        self.autenticacao.setEnabled(bool(self.project_QgsPasswordLineEdit.text()))
+
+    def pop_aviso_auth(self, aviso):
+        """
+        Displays a warning message box with the given message and Ok button.
+        Args:
+            aviso (str): The warning message to display in the message box.
+        Returns:
+            None
+        Note:
+            This method restores the override cursor before displaying the message box.
+        """
+        QApplication.restoreOverrideCursor()
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Warning!")
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText(aviso)
+        
+        # Set buttons with Ok on the right
+        msg.setStandardButtons(QMessageBox.Ok)
+        
+        # Access the buttons to set custom text
+        ok_button = msg.button(QMessageBox.Ok)
+        ok_button.setText("Ok")
+        
+        msg.exec_()
 
     def on_tab_changed(self, index):
         print(f"Tab changed to index: {index}")
@@ -293,51 +418,34 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         print(f"Loaded vector layers: {self.vector_layer_ids}")
         self.get_selected_layer_path()
 
-    def get_selected_layer_path(self) -> str:
+
+    def get_selected_layer_path(self):
+        """
+        Retrieves the path of the currently selected layer in the combobox and triggers further processing.
+        """
+        # Get the currently selected layer name from the combobox
         layer_name = self.vector_layer_combobox.currentText()
+        self.zoom_to_layer(layer_name)
         print(f"Selected layer name: {layer_name}")  # Debug: Show selected layer name
-        
+
+        # Get the corresponding layer ID
         layer_id = self.vector_layer_ids.get(layer_name)
-        if not layer_id:
-            print(f"Layer ID for '{layer_name}' not found in vector_layer_ids.")
-            return None
-        
+
+        # Get the layer using its ID
         layer = QgsProject.instance().mapLayer(layer_id)
         if layer:
             print(f"Layer found: {layer.name()}, ID: {layer_id}")  # Debug: Confirm layer is found
-            print(f"Layer data provider: {layer.dataProvider().dataSourceUri().split('|')[0]}")  # Debug: Show layer data source URI
+            self.selected_aio_layer_path = layer.dataProvider().dataSourceUri().split('|')[0]
+            print(f"Selected layer path: {self.selected_aio_layer_path}")  # Debug: Show selected layer path
+            
+            # Trigger the processing function
+            self.load_vector_function()
 
-            shapefile_extensions = [
-                ".shp",  # Geometry (main file)
-                ".shx",  # Index (spatial indexing)
-                ".dbf",  # Attribute data (DBF format)
-                ".prj",  # Projection (coordinate reference system)
-                ".sbn",  # Spatial index (optional, used by some GIS software)
-                ".sbx",  # Spatial index auxiliary file (optional)
-                ".xml",  # Metadata (optional)
-                ".cpg",  # Character encoding file (optional)
-                ".mif",  # MapInfo Interchange Format (non-standard)
-                ".shp.xml",  # XML metadata (non-standard)
-                '.kmz',  # Keyhole Markup Language (non-standard)
-                '.gdb',  # Geodatabase (non-standard)
-            ]
-
-            # Check if the layer's data source URI contains any of the shapefile extensions
-            if any(ext in layer.dataProvider().dataSourceUri().lower() for ext in shapefile_extensions):
-                self.selected_aio_layer_path = layer.dataProvider().dataSourceUri().split('|')[0]
-                print(f"Selected layer path: {self.selected_aio_layer_path}")
-                self.load_vector_function()
-                # Enable next
-                return None
-            else:
-                print(f"Layer '{layer_name}' is not a shapefile.")
-                return None
-
-
+            # Enable next steps if necessary
+            return None
         else:
             print(f"Layer '{layer_name}' with ID '{layer_id}' not found in the project.")
             return None
-
 
     def update_dem_info(self):
         dem_name = self.dem_dataset_combobox.currentText()
@@ -346,55 +454,139 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.dem_resolution_combobox.clear()
         self.dem_resolution_combobox.addItems([str(res) for res in self.dem_datasets[dem_name]["Resolution"]])
 
-    # def auth(self):
-    #     print('Autenticando...')
-    #     ee.Authenticate()
 
+    def zoom_to_layer(self, layer_name, margin_ratio=0.1):
+        """
+        Zoom to the specified layer with an optional margin.
+
+        :param layer_name: Name of the layer to zoom to.
+        :param margin_ratio: Fraction of the extent to add as margin (default is 0.1, or 10%).
+        """
+        project = QgsProject.instance()
+        layers = project.mapLayersByName(layer_name)  # Get layers matching the name
         
-    def auth_test(self):
-    # Attempt to initialize Earth Engine
+        if not layers:
+            print(f"Layer '{layer_name}' not found.")
+            return
+        
+        layer = layers[0]  # Use the first matching layer
+        iface = qgis.utils.iface  # Access the QGIS interface
+        canvas = iface.mapCanvas()  # Get the active map canvas
+        
+        # Ensure the canvas CRS matches the layer CRS
+        canvas.setDestinationCrs(layer.crs())
+        
+        # Get the layer's extent and add a margin
+        layer_extent = layer.extent()
+        x_margin = layer_extent.width() * margin_ratio
+        y_margin = layer_extent.height() * margin_ratio
+        
+        expanded_extent = QgsRectangle(
+            layer_extent.xMinimum() - x_margin,
+            layer_extent.yMinimum() - y_margin,
+            layer_extent.xMaximum() + x_margin,
+            layer_extent.yMaximum() + y_margin
+        )
+        
+        # Set the expanded extent to the canvas
+        canvas.setExtent(expanded_extent)
+        canvas.refresh()
+        
+        print(f"Zoomed to layer extent with margin: {expanded_extent.toString()}")
+
+    def auth(self):
+        """
+        Authenticates Earth Engine and validates the default project.
+        Warnings are displayed only if the default project is invalid.
+        """
         try:
+            # Step 1: Authenticate and initialize Earth Engine
+            print("Authenticating Earth Engine...")
             ee.Authenticate()
-            ee.Initialize()
-            self.pop_aviso("Authentication successful!")
-            self.autentication = True
-            # self.pushButtonNext.setEnabled(True)
-            self.tabWidget.setCurrentIndex(1)
+            ee.Initialize(project=self.project_QgsPasswordLineEdit.text())
             print("Authentication successful!")
 
-        except ee.EEException as e:
-            if "Earth Engine client library not initialized" in str(e):
-                self.pop_aviso("Authentication failed. Please authenticate.")
-                print("Authentication failed. Please authenticate.")
-                ee.Authenticate()
-                ee.Initialize()  # Retry after authentication
-            else:
-                print(f"An error occurred: {e}")
+            # Step 2: Test default project
+            print("Testing default project...")
+            default_project_path = f"projects/{self.project_QgsPasswordLineEdit.text()}/assets/"  # Replace with your default project's path if known
 
-    def auth_clear(self):
-        print('Desautenticando...')
-        """Clears the Earth Engine authentication by deleting the credentials file."""
-        
+            # Attempt to list assets in the default project
+            try:
+                assets = ee.data.listAssets({'parent': default_project_path})
+                print(f"Assets in default project: {assets}")
+
+                if assets.get('assets') is not None:  # Valid project detected
+                    print("Default project is valid.")
+                    self.pop_aviso_auth("Authentication successful!")
+                    self.autentication = True
+                    self.load_vector_layers()
+                    self.load_path_sugestion()
+                    self.next_clicked()
+                else:
+                    print("Default project is valid but contains no assets.")  # No warning needed for this case
+            except ee.EEException as e:
+                # Invalid project or access issue
+                print(f"Default project validation failed: {e}")
+                self.pop_aviso_auth(f"Default project validation failed: {e}\nFollow the instructions to have a valid Google Cloud project.")
+                self.auth_clear(True)
+
+
+        except ee.EEException as e:
+            # Handle Earth Engine-specific errors
+            print(f"Earth Engine error: {e}")
+            if "Earth Engine client library not initialized" in str(e):
+                message = "Authentication failed. Please authenticate again."
+                print(message)
+                self.pop_aviso_auth(message)
+            else:
+                message = f"An error occurred during authentication or initialization: {e}"
+                print(message)
+                self.pop_aviso_auth(message)
+                self.auth_clear(True)
+
+
+        except Exception as e:
+            # Handle unexpected errors
+            message = f"An unexpected error occurred: {e}"
+            print(message)
+            self.pop_aviso_auth(message)
+
+    def auth_clear(self, silent=False):
+        """
+        Completely clears Earth Engine authentication by deleting the entire
+        Earth Engine configuration directory, including credentials and cached data.
+        """
+        self.project_QgsPasswordLineEdit.clear()
+        self.autenticacao.setEnabled(False)
+        self.autentication = False
+
+
         system = platform.system()
         
-        # Set the path for Earth Engine credentials based on the operating system
+        # Determine the Earth Engine configuration directory based on OS.
         if system == 'Windows':
-            credentials_path = os.path.join(os.environ['USERPROFILE'], '.config', 'earthengine', 'credentials')
-        elif system == 'Linux':
-            credentials_path = os.path.join(os.environ['HOME'], '.config', 'earthengine', 'credentials')
-        elif system == 'Darwin':  # MacOS
-            credentials_path = os.path.join(os.environ['HOME'], 'Library', 'Application Support', 'earthengine', 'credentials')
+            config_dir = os.path.join(os.environ['USERPROFILE'], '.config', 'earthengine')
+        elif system in ['Linux', 'Darwin']:  # Linux or MacOS (Darwin)
+            config_dir = os.path.join(os.environ['HOME'], '.config', 'earthengine')
         else:
             raise Exception(f"Unsupported operating system: {system}")
-
-        # Check if the credentials file exists and delete it
-        if os.path.exists(credentials_path):
-            os.remove(credentials_path)
-            self.pop_aviso('Tolken cleared successfully.')
-            print("Earth Engine authentication cleared successfully.")
+        
+        # Check if the configuration directory exists and delete it.
+        if os.path.exists(config_dir):
+            try:
+                shutil.rmtree(config_dir)
+                if not silent:
+                    message = "Earth Engine configuration cleared successfully (all files deleted)."
+                    print(message)
+                    self.pop_aviso_auth(message)
+            except Exception as e:
+                message = f"Error clearing Earth Engine configuration: {e}"
+                print(message)
+                self.pop_aviso_auth(message)
         else:
-            self.pop_aviso("No Earth Engine credentials found to clear.")
-            print("No Earth Engine credentials found to clear.")
+            message = "No Earth Engine configuration found to clear."
+            print(message)
+            self.pop_aviso_auth(message)
 
     def pop_aviso(self, aviso):
         QApplication.restoreOverrideCursor()
