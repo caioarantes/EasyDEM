@@ -1,120 +1,240 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EasyDEM QGIS Plugin</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f9f9f9;
-        }
-        .container {
-            width: 80%;
-            max-width: 900px;
-            background: #ffffff;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        .title {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .logo {
-            width: 50px;
-            height: auto;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            margin: 10px 0;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-        }
-        .download-button {
-            display: inline-block;
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 10px 0;
-            text-align: center;
-        }
-        .download-button:hover {
-            background-color: #0056b3;
-        }
-        pre {
-            background: #f4f4f4;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            overflow-x: auto;
-        }
-    </style>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EasyDEM QGIS Plugin</title>
+  <meta name="description" content="EasyDEM is a QGIS Plugin that lets you access and download multiple Digital Elevation Models (DEMs) via the Google Earth Engine API.">
+  <link rel="icon" href="./index_files/icon.png" type="image/png">
+  <style>
+    /* Base resets and typography */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      background-color: #f9f9f9;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    /* Header styling */
+    header {
+      background: #007bff;
+      color: #fff;
+      padding: 20px 0;
+      text-align: center;
+    }
+    header .title {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    header .title img {
+      width: 60px;
+      height: auto;
+    }
+    header h1 {
+      font-size: 2rem;
+    }
+    /* Navigation (optional) */
+    nav {
+      background: #0056b3;
+      padding: 10px 0;
+      text-align: center;
+    }
+    nav a {
+      color: #fff;
+      margin: 0 15px;
+      font-weight: bold;
+    }
+    /* Main content styling */
+    main {
+      flex: 1;
+      padding: 20px;
+      max-width: 900px;
+      width: 90%;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    section {
+      margin-bottom: 2rem;
+    }
+    h2 {
+      margin-bottom: 15px;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 5px;
+    }
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 15px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      overflow-x: auto;
+      margin-bottom: 15px;
+    }
+    /* Download Button */
+    .download-button {
+      display: inline-block;
+      background-color: #007bff;
+      color: #fff;
+      padding: 12px 25px;
+      border-radius: 5px;
+      text-align: center;
+      margin: 20px 0;
+      transition: background-color 0.3s ease;
+    }
+    .download-button:hover {
+      background-color: #0056b3;
+    }
+    /* Image responsiveness */
+    img.screenshot {
+      max-width: 100%;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+    /* Footer styling */
+    footer {
+      background: #333;
+      color: #fff;
+      text-align: center;
+      padding: 15px 10px;
+      font-size: 0.9rem;
+    }
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.5rem;
+      }
+      nav a {
+        margin: 0 10px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="title">
-            <img src="./index_files/icon.png" alt="EasyDEM Logo" class="logo">
-            <h1>EasyDEM</h1>
-        </div>
+  <header>
+    <div class="title">
+      <img src="./index_files/icon.png" alt="EasyDEM Logo">
+      <h1>EasyDEM QGIS Plugin</h1>
+    </div>
+    <p>Your gateway to multiple DEM datasets via Google Earth Engine</p>
+  </header>
 
-        <p><strong>EasyDEM</strong> - A QGIS Plugin for Accessing Multiple Digital Elevation Models (DEMs) through the Google Earth Engine API.</p>
+  <!-- Optional Navigation Menu -->
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#installation">Installation</a>
+    <a href="#guide">Guide</a>
+    <a href="#download">Download</a>
+  </nav>
 
-        <hr>
+  <main>
+    <section id="about">
+      <h2>About EasyDEM</h2>
+      <p>
+        <strong>EasyDEM</strong> is a powerful QGIS plugin that enables you to easily access and download multiple Digital Elevation Models (DEMs) from Google Earth Engine. With a seamless integration into QGIS, you can quickly visualize and analyze topography from datasets such as NASADEM, ASTER GED, COPERNICUS DEM, JAXA ALOS, and USGS GMTED2010.
+      </p>
+    </section>
 
-        <h2>Features</h2>
-        <ul>
-            <li><strong>Access Multiple DEM Datasets</strong>: Easily access and visualize various DEM datasets from Google Earth Engine (GEE) catalogs, including:
-                <ol>
-                    <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_NASADEM_HGT_001">NASA/NASADEM_HGT/001</a></li>
-                    <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_ASTER_GED_AG100_003">NASA/ASTER_GED/AG100_003</a></li>
-                    <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_DEM_GLO30">COPERNICUS/DEM/GLO30</a></li>
-                    <li><a href="https://developers.google.com/earth-engine/datasets/catalog/JAXA_ALOS_AW3D30_V3_2">JAXA/ALOS/AW3D30/V3_2</a></li>
-                    <li><a href="https://developers.google.com/earth-engine/datasets/catalog/USGS_GMTED2010_FULL">USGS/GMTED2010_FULL</a></li>
-                </ol>
-            </li>
-            <li><strong>Seamless Integration</strong>: Directly access and load DEM data into QGIS for immediate use in your projects.</li>
-        </ul>
+    <section id="features">
+      <h2>Features</h2>
+      <ul>
+        <li>
+          <strong>Access Multiple DEM Datasets</strong>: Quickly access and visualize various DEM datasets from GEE catalogs including:
+          <ol>
+            <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_NASADEM_HGT_001" target="_blank">NASA/NASADEM_HGT/001</a></li>
+            <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_ASTER_GED_AG100_003" target="_blank">NASA/ASTER_GED/AG100_003</a></li>
+            <li><a href="https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_DEM_GLO30" target="_blank">COPERNICUS/DEM/GLO30</a></li>
+            <li><a href="https://developers.google.com/earth-engine/datasets/catalog/JAXA_ALOS_AW3D30_V3_2" target="_blank">JAXA/ALOS/AW3D30/V3_2</a></li>
+            <li><a href="https://developers.google.com/earth-engine/datasets/catalog/USGS_GMTED2010_FULL" target="_blank">USGS/GMTED2010_FULL</a></li>
+          </ol>
+        </li>
+        <li><strong>Seamless Integration:</strong> Load DEM data directly into QGIS with a few clicks.</li>
+        <li><strong>User-Friendly Interface:</strong> Easy-to-follow setup and step-by-step guide to get started.</li>
+      </ul>
+    </section>
 
-        <hr>
+    <section id="installation">
+      <h2>Installation</h2>
+      <h3>Via QGIS Plugin Manager</h3>
+      <ol>
+        <li>Open QGIS.</li>
+        <li>Navigate to <code>Plugins &gt; Manage and Install Plugins</code>.</li>
+        <li>Search for <strong>EasyDEM</strong>.</li>
+        <li>Click <strong>Install</strong>.</li>
+        <li><strong>Restart QGIS</strong> to activate the plugin.</li>
+      </ol>
+      <p>
+        Once installed, access DEM data by opening the plugin toolbar or icon, authenticating your Google Earth Engine (GEE) account, choosing your Area of Interest (vector layer) and output folder, and selecting your desired DEM dataset.
+      </p>
+    </section>
 
-        <h2>Installation</h2>
-        <h3>From QGIS Plugin Manager</h3>
-        <ol>
-            <li>Open QGIS.</li>
-            <li>Navigate to <code>Plugins</code> &gt; <code>Manage and Install Plugins</code>.</li>
-            <li>Search for <strong>EasyDEM</strong>.</li>
-            <li>Click <strong>Install</strong>.</li>
-            <li>MUST DO: <strong>Restart QGIS</strong>.</li>
-        </ol>
-            <li><strong>Access DEM Data:</strong> Open the plugin toolbar or icon, authenticate your GEE account, choose your area of interest (vector layer), output folder, the desired DEM dataset from Google Earth Engine, and load it directly into your QGIS workspace.</li>
-            <li><strong>Exported Data:</strong> Downloaded DEM data will be in the selected output folder.</li>
-        </ol>
+    <section id="guide">
+      <h2>Step-by-Step Guide</h2>
+      <ol>
+        <li>
+          <strong>Initial Setup:</strong>
+          <img src="./index_files/1.png" alt="Initial Setup Screenshot" class="screenshot">
+        </li>
+        <li>
+          <strong>Area of Interest Selection:</strong>
+          <img src="./index_files/2.png" alt="Area of Interest Selection Screenshot" class="screenshot">
+        </li>
+        <li>
+          <strong>DEM Dataset Selection:</strong>
+          <img src="./index_files/3.png" alt="DEM Dataset Selection Screenshot" class="screenshot">
+        </li>
+      </ol>
+    </section>
 
-        <h3>Step-by-Step Guide</h3>
-        <ol>
-            <li><strong>Initial Setup:</strong></li>
-            <img src="./index_files/1.png" alt="Initial Setup Screenshot">
+    <section id="download">
+      <h2>Download EasyDEM</h2>
+      <p>
+        Get the latest version of EasyDEM directly from the QGIS Plugin Manager or download the packaged version below.
+      </p>
+      <a class="download-button" href="https://your-download-link.com" target="_blank">Download EasyDEM</a>
+    </section>
 
-            <li><strong>Area of Interest Selection:</strong></li>
-            <img src="./index_files/2.png" alt="Area of Interest Selection Screenshot">
+    <section id="code">
+      <h2>Sample Code Snippet</h2>
+      <pre><code>
+# Example: Authenticate and load DEM data using EasyDEM
+import ee
+ee.Authenticate()
+ee.Initialize()
 
-            <li><strong>DEM Dataset Selection:</strong></li>
-            <img src="./index_files/3.png" alt="DEM Dataset Selection Screenshot">
-        </ol>
+# Access a DEM dataset
+dem = ee.Image("COPERNICUS/DEM/GLO30")
+print("DEM loaded successfully!")
+      </code></pre>
+    </section>
+  </main>
 
-        <hr>
-
-        <h2>License</h2>
-        <p><strong>The EasyDEM QGIS plugin is licensed under the MIT License.</strong></p>
-        <pre><code>
+  <footer>
+    <p>&copy; 2024 EasyDEM. All rights reserved. | Developed for QGIS users by Caio Arantes.</p>
+  </footer>
+</body>
+</html>

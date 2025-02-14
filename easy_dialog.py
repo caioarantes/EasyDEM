@@ -22,31 +22,82 @@
  *                                                                         *
  ***************************************************************************/
 """
-
+# Standard library imports
 import os
 import sys
-import subprocess
+import importlib
 import platform
+import subprocess
 import zipfile
-import shutil  # Import for auth_clear
-from qgis.utils import iface
+import json
+import webbrowser
+import io
+import array
+import shutil
+import urllib.request
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+
+# Third-party imports
+import geopandas as gpd
+import requests
+import pandas as pd
+import numpy as np
+from scipy.signal import savgol_filter
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+# PyQt5 imports
+from PyQt5 import uic, QtWidgets
+from PyQt5.QtCore import QSettings, Qt, QDate
+from PyQt5.QtWidgets import (
+    QDialog,
+    QMessageBox,
+    QFileDialog,
+    QApplication,
+    QGridLayout,
+    QWidget,
+    QDesktopWidget,
+    QVBoxLayout,
+    QCheckBox,
+    QDialogButtonBox,
+    QPushButton,
+    QLineEdit,
+)
+from PyQt5.QtGui import QColor
+
+# QGIS imports
 import qgis
 from qgis.core import (
-    QgsProject, QgsRasterLayer, QgsRasterShader, QgsColorRampShader, 
-    QgsSingleBandPseudoColorRenderer, QgsStyle, QgsRasterBandStats, 
-    QgsMapLayer, QgsVectorLayer, QgsColorRamp, QgsLayerTreeLayer, 
-    QgsCoordinateReferenceSystem, QgsCoordinateTransform, 
-    QgsMultiBandColorRenderer, QgsContrastEnhancement, 
-    QgsProcessingFeedback, QgsApplication, QgsRectangle, 
-    QgsFeature, QgsGeometry, QgsField, QgsVectorFileWriter,
+    QgsProject,
+    QgsRasterLayer,
+    QgsRasterShader,
+    QgsColorRampShader,
+    QgsSingleBandPseudoColorRenderer,
+    QgsStyle,
+    QgsRasterBandStats,
+    QgsMapLayer,
+    QgsVectorLayer,
+    QgsColorRamp,
+    QgsLayerTreeLayer,
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
+    QgsMultiBandColorRenderer,
+    QgsContrastEnhancement,
+    QgsProcessingFeedback,
+    QgsApplication,
+    QgsRectangle,
+    QgsFeature,
+    QgsGeometry,
+    QgsField,
+    QgsVectorFileWriter,
 )
 from qgis.utils import iface
-import qgis
+from qgis import processing
+from qgis.PyQt.QtCore import QVariant
+from qgis.analysis import QgsNativeAlgorithms
 
-import importlib
-import urllib.request
-import json
-import sys
 
 def get_installed_version():
     """Return the installed Earth Engine API version, or None if not installed."""
@@ -118,62 +169,6 @@ try:
 except ImportError:
     print("Earth Engine API could not be imported after installation.")
 
-import os
-from PyQt5 import uic
-from PyQt5.QtCore import QSettings
-
-# PyQt5 modules
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import (
-    QDialog,
-    QMessageBox,
-    QFileDialog,
-    QApplication,
-    QGridLayout,
-    QWidget,
-    QDesktopWidget,
-    QVBoxLayout,
-    QCheckBox,
-    QDialogButtonBox,
-    QPushButton,
-    QLineEdit,
-)
-from PyQt5.QtCore import Qt, QDate
-from PyQt5.QtGui import QColor
-
-# QGIS modules
-from qgis.core import (
-    QgsProject,
-    QgsMapLayer,
-    QgsRasterLayer,
-    QgsVectorLayer,
-    QgsRasterShader,
-    QgsColorRampShader,
-    QgsSingleBandPseudoColorRenderer,
-    QgsStyle,
-    QgsColorRamp,
-    QgsCoordinateReferenceSystem,
-    QgsCoordinateTransform,
-    QgsLayerTreeLayer,
-)
-from qgis.utils import iface
-from qgis import processing
-from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QVariant
-from qgis.analysis import QgsNativeAlgorithms
-
-# Third-party modules
-import geopandas as gpd
-import requests
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import numpy as np
-from scipy.signal import savgol_filter
-import dateutil.relativedelta
-from datetime import datetime, timedelta
-import importlib
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -253,6 +248,11 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
 
         }
 
+        self.textEdit.setReadOnly(True)  # Prevent editing
+        self.textEdit.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        self.textEdit.anchorClicked.connect(self.open_link)
+
+        self.tabWidget.setCurrentIndex(0)
 
         self.folder_set = False
         self.aio_set = True
@@ -277,6 +277,12 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.loadProjectId()
         # Connect the textChanged signal to automatically save changes.
         self.project_QgsPasswordLineEdit.textChanged.connect(self.autoSaveProjectId)
+
+
+    def open_link(self, url):
+        """Open the clicked link in the default web browser."""
+        print(f"Opening URL: {url.toString()}")
+        webbrowser.open(url.toString())
 
     def next_clicked(self):
         self.tabWidget.setCurrentIndex((self.tabWidget.currentIndex() + 1) % self.tabWidget.count())
@@ -611,84 +617,77 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
             # Add your code here for what to do when Cancel is clicked
             return False
     
-
-
     def load_vector_function(self):
+        """
+        Loads the vector layer from the selected file path, reprojects it to EPSG:4326,
+        dissolves multiple features if necessary, and converts it into an Earth Engine
+        FeatureCollection representing the AOI.
+        """
         shapefile_path = self.selected_aio_layer_path
-        
-        # Check if the path is a .zip file
-        if shapefile_path.endswith('.zip'):
-            # Try to read shapefile from a zip archive
-            try:
-                # Check if the .zip file exists and open it
+        self.aoi = None  # Ensure the attribute exists to avoid AttributeError
+
+        try:
+            # Load the shapefile, handling both .zip archives and regular files.
+            if shapefile_path.endswith('.zip'):
                 with zipfile.ZipFile(shapefile_path, 'r') as zip_ref:
-                    zip_ref.printdir()  # Optional: Print contents of the zip to debug
-                    # Try to find the .shp file inside the zip
                     shapefile_found = False
                     for file in zip_ref.namelist():
                         if file.endswith('.shp'):
                             shapefile_found = True
                             shapefile_within_zip = file
                             break
-                    
-                    if shapefile_found:
-                        # Read shapefile directly from the zip file
-                        self.aoi = gpd.read_file(f'zip://{shapefile_path}/{shapefile_within_zip}')
-                        print(f"Successfully loaded shapefile from {shapefile_path}.")
-                    else:
+                    if not shapefile_found:
                         print("No .shp file found inside the zip archive.")
                         return
-            except Exception as e:
-                print(f"Error reading shapefile from zip archive: {e}")
+
+                    # Read shapefile directly from the zip archive.
+                    self.aoi = gpd.read_file(f"zip://{shapefile_path}/{shapefile_within_zip}")
+            else:
+                self.aoi = gpd.read_file(shapefile_path)
+
+            # Reproject the GeoDataFrame to EPSG:4326 to ensure correct coordinates for Earth Engine.
+            self.aoi = self.aoi.to_crs(epsg=4326)
+
+            if self.aoi.empty:
+                print("The shapefile does not contain any geometries.")
                 return
 
-        else:
-            # If not a .zip, assume it is a regular shapefile
-            try:
-                # Read the shapefile normally
-                self.aoi = gpd.read_file(shapefile_path)
-                print(f"Successfully loaded shapefile from {shapefile_path}.")
-            except Exception as e:
-                print(f"Error reading shapefile: {e}")
-                return
-        
-        # After loading, check if the GeoDataFrame is not empty
-        if not self.aoi.empty:
-            # If the GeoDataFrame contains multiple geometries, dissolve them into one
+            # Dissolve multiple features into a single geometry if necessary.
             if len(self.aoi) > 1:
                 self.aoi = self.aoi.dissolve()
 
-            # Extract the first geometry from the dissolved GeoDataFrame
+            # Extract the first geometry.
             geometry = self.aoi.geometry.iloc[0]
 
-            # Check if the geometry is a Polygon or MultiPolygon
-            if geometry.geom_type in ['Polygon', 'MultiPolygon']:
-                # Convert the geometry to GeoJSON format
-                geojson = geometry.__geo_interface__
-
-                # Remove the third dimension from the coordinates if it exists
-                if geojson['type'] == 'Polygon':
-                    geojson['coordinates'] = [list(map(lambda coord: coord[:2], ring)) for ring in geojson['coordinates']]
-                elif geojson['type'] == 'MultiPolygon':
-                    geojson['coordinates'] = [[list(map(lambda coord: coord[:2], ring)) for ring in polygon] for polygon in geojson['coordinates']]
-
-                # Create an Earth Engine geometry object from the GeoJSON coordinates
-                ee_geometry = ee.Geometry(geojson)
-
-                # Convert the Earth Engine geometry to a Feature
-                feature = ee.Feature(ee_geometry)
-
-                # Create a FeatureCollection with the feature
-                self.aoi = ee.FeatureCollection([feature])
-
-                print("AOI defined successfully.")
-                self.aio_set = True
-                self.check_next_button()
-            else:
+            # Validate the geometry type.
+            if geometry.geom_type not in ['Polygon', 'MultiPolygon']:
                 print("The geometry is not a valid type (Polygon or MultiPolygon).")
-        else:
-            print("The shapefile does not contain any geometries.")
+                return
 
+            # Convert the geometry to GeoJSON format.
+            geojson = geometry.__geo_interface__
+
+            # Remove any third dimension from the coordinates.
+            if geojson['type'] == 'Polygon':
+                geojson['coordinates'] = [list(map(lambda coord: coord[:2], ring)) for ring in geojson['coordinates']]
+            elif geojson['type'] == 'MultiPolygon':
+                geojson['coordinates'] = [
+                    [list(map(lambda coord: coord[:2], ring)) for ring in polygon]
+                    for polygon in geojson['coordinates']
+                ]
+
+            # Create an Earth Engine geometry object.
+            ee_geometry = ee.Geometry(geojson)
+            feature = ee.Feature(ee_geometry)
+            self.aoi = ee.FeatureCollection([feature])
+
+            print("AOI defined successfully.")
+            self.aio_set = True
+            self.check_next_button()
+
+        except Exception as e:
+            print(f"Error in load_vector_function: {e}")
+            return
 
 
     def elevacao_clicked(self):
@@ -722,6 +721,8 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
                 'region': aoi.geometry().bounds().getInfo(),
                 'format': 'GeoTIFF'
             })
+
+            
 
             # Include DEM source ID in file name, replacing invalid characters
             base_file_name = f'elevation_profile_{safe_dem_source_id}'
