@@ -5,7 +5,3 @@
 **Seamless Integration**: Load DEM data directly into QGIS.
 
 For more details, visit [EasyDEM Plugin Guide](https://caioarantes.github.io/qgis-EasyDEM-plugin/).
----
-## License
-
-**The EasyDEM QGIS plugin is licensed under the MIT License.**

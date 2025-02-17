@@ -6,7 +6,7 @@
 name=EasyDEM
 qgisMinimumVersion=3.0
 description=Get Digital Elevation Model (DEM) datasets from multiple sources with Google Earth Engine API and load it as raster layer.
-version=1.2
+version=1.1
 author=Caio Arantes
 email=c168343@dac.unicamp.br
 
