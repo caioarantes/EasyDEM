@@ -37,6 +37,8 @@ import shutil
 import urllib.request
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+import tempfile
+from qgis.core import QgsWkbTypes
 
 # Third-party imports
 import geopandas as gpd
@@ -93,182 +95,90 @@ from qgis.core import (
     QgsField,
     QgsVectorFileWriter,
 )
+
+
 from qgis.utils import iface
 from qgis import processing
 from qgis.PyQt.QtCore import QVariant
 from qgis.analysis import QgsNativeAlgorithms
 
+from .modules import (
+    ee_utils,
+    datasets_info
 
-def get_installed_version():
-    """Return the installed Earth Engine API version, or None if not installed."""
-    try:
-        import ee
-        return ee.__version__
-    except ImportError:
-        return None
+)
 
-def get_latest_version():
-    """Query PyPI for the latest Earth Engine API version."""
-    try:
-        url = "https://pypi.org/pypi/earthengine-api/json"
-        with urllib.request.urlopen(url) as response:
-            data = json.load(response)
-        return data["info"]["version"]
-    except Exception as e:
-        print("Error fetching latest version from PyPI:", e)
-        return None
-
-def install_earthengine_api():
-    """Install or upgrade the Earth Engine API to the latest version using pip's internal API."""
-    try:
-        # Attempt to use pip.main (for older pip versions)
-        import pip
-        print("Using pip version:", pip.__version__)
-        pip_args = ['install', '--upgrade', 'earthengine-api']
-        pip.main(pip_args)
-        print("Earth Engine API installed/upgraded successfully (using pip.main).")
-    except AttributeError:
-        # Fallback for newer pip versions that do not expose pip.main
-        try:
-            from pip._internal.cli.main import main as pip_main
-            pip_main(['install', '--upgrade', 'earthengine-api'])
-            print("Earth Engine API installed/upgraded successfully (using pip._internal).")
-        except Exception as e:
-            print("An error occurred during installation:", e)
-    except Exception as e:
-        print("An error occurred during installation:", e)
-
-# Determine installed and latest versions.
-installed_version = get_installed_version()
-latest_version = get_latest_version()
-
-if installed_version:
-    print("Installed Earth Engine API version:", installed_version)
-else:
-    print("Earth Engine API is not installed.")
-
-if latest_version:
-    print("Latest Earth Engine API version available on PyPI:", latest_version)
-else:
-    print("Could not determine the latest Earth Engine API version from PyPI.")
-
-# If there's no installation or the installed version differs from the latest, install/upgrade.
-if (installed_version is None) or (latest_version is not None and installed_version != latest_version):
-    print("Upgrading/Installing Earth Engine API to the latest version...")
-    install_earthengine_api()
-    # Invalidate caches so that the newly installed package is found.
-    importlib.invalidate_caches()
-else:
-    print("Latest version is already installed. Importing Earth Engine API...")
-
-# Import the Earth Engine API and print its version.
+# Import the Earth Engine API
 try:
-    importlib.import_module('ee')
     import ee
-    print("Final Earth Engine API version:", ee.__version__)
-except ImportError:
-    print("Earth Engine API could not be imported after installation.")
+except:
+    pass
 
+language = QSettings().value("locale/userLocale", "en")[0:2]
+
+if language == "pt":
+    ui_file = os.path.join("ui", "easy_dialog_base_pt.ui")
+else:
+    ui_file = os.path.join("ui", "easy_dialog_base.ui")
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'easy_dialog_base.ui'))
+    os.path.dirname(__file__), ui_file))
 
 class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         super(easydemDialog, self).__init__(parent)
         self.setupUi(self)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint)
 
-        self.dem_datasets = { "NASADEM": {
-                "ID": "NASA/NASADEM_HGT/001",
-                "Resolution": [30],
-                "Coverage": "Global",
-                "Description": "A refined reprocessing of SRTM data, incorporating auxiliary datasets for improved accuracy and void reduction.",
-                "Info": "<b>NASADEM</b> <br>"
-                        "<b>ID:</b> NASA/NASADEM_HGT/001 <br>"
-                        "<b>Resolution:</b> 30 meters <br>"
-                        "<b>Coverage:</b> Global <br>"
-                        "NASADEM integrates auxiliary data from ASTER GDEM, ICESat GLAS, and PRISM datasets. Significant improvements include enhanced phase unwrapping and void reduction using ICESat GLAS data as control. "
-                        "These refinements make it ideal for detailed topographic studies and high-resolution terrain analysis. "
-                        "(<a href='https://earthdata.nasa.gov/esds/competitive-programs/measures/nasadem'>Source</a>)"
-            },
-            "ASTER Global Digital Elevation Model (GDEM)": {
-                "ID": "NASA/ASTER_GED/AG100_003",
-                "Resolution": [100],
-                "Coverage": "Global",
-                "Description": "The Advanced Spaceborne Thermal Emission and Reflection Radiometer Global Emissivity Database (ASTER-GED) is a comprehensive product developed by NASA's JPL and Caltech. It includes elevation data, mean emissivity, LST, NDVI, and standard deviations for ASTER Thermal Infrared bands.",
-                "Info": "<b>ASTER GDEM</b> <br>"
-                        "<b>ID:</b> NASA/ASTER_GED/AG100_003 <br>"
-                        "<b>Resolution:</b> 100 meters <br>"
-                        "<b>Coverage:</b> Global <br>"
-                        "Derived from clear-sky pixels using the ASTER Temperature Emissivity Separation (TES) algorithm with WVS atmospheric correction. "
-                        "(<a href='https://developers.google.com/earth-engine/datasets/catalog/NASA_ASTER_GED_AG100_003/'>Source</a>)"
-            },
-            "Copernicus Global Digital Elevation Model (GLO-30)": {
-                "ID": "COPERNICUS/DEM/GLO30",
-                "Resolution": [30],
-                "Coverage": "Global",
-                "Description": "A Digital Surface Model (DSM) that includes Earth's surface features such as buildings, infrastructure, and vegetation, derived from the WorldDEM product.",
-                "Info": "<b>Copernicus GLO-30</b> <br>"
-                        "<b>ID:</b> COPERNICUS/DEM/GLO30 <br>"
-                        "<b>Resolution:</b> 30 meters <br>"
-                        "<b>Coverage:</b> Global <br>"
-                        "Derived from the WorldDEM product, based on radar data from the TanDEM-X mission, a partnership between DLR and Airbus Defence and Space. "
-                        "Earth Engine assets are ingested from DGED files. "
-                        "(<a href='https://spacedata.copernicus.eu/collections/elevation'>Source</a>)"
-            },
-            "JAXA ALOS Global Digital Surface Model (AW3D30)": {
-                "ID": "JAXA/ALOS/AW3D30/V3_2",
-                "Resolution": [30],
-                "Coverage": "Global",
-                "Description": "A global digital surface model (DSM) dataset at ~30-meter resolution, derived from the high-resolution (5-meter) World 3D Topographic Data.",
-                "Info": "<b>JAXA ALOS DSM (AW3D30)</b> <br>"
-                        "<b>ID:</b> JAXA/ALOS/AW3D30/V3_2 <br>"
-                        "<b>Resolution:</b> 30 meters <br>"
-                        "<b>Coverage:</b> Global <br>"
-                        "Version 3.2 (January 2021) includes updates to high-latitude formats, auxiliary data, and processing methods. "
-                        "It uses stereo optical image matching for elevation calculation, with improvements in detecting anomalous values and incorporating updated auxiliary datasets such as coastline and AW3D version 3 data for Japan. "
-                        "Clouds, snow, and ice are masked during processing, but some errors may persist near their edges. "
-                        "Due to variable resolutions, this dataset is an image collection, requiring reprojection for slope computations. "
-                        "(<a href='https://www.eorc.jaxa.jp/ALOS/en/aw3d30/index.htm'>Source</a>)"
-            },
-            "GMTED2010 (Global Multi-resolution Terrain Elevation Data 2010)": {
-                "ID": "USGS/GMTED2010_FULL",
-                "Resolution": [250, 500, 1000],
-                "Coverage": "Global",
-                "Description": "A global elevation dataset derived from multiple sources, replacing the GTOPO30 Elevation Model, with coverage at multiple resolutions.",
-                "Info": "<b>GMTED2010</b> <br>"
-                        "<b>ID:</b> USGS/GMTED2010_FULL <br>"
-                        "<b>Resolutions:</b> 250, 500, and 1000 meters <br>"
-                        "<b>Coverage:</b> Global <br>"
-                        "Developed using NGA's SRTM DTED® (1-arc-second void-filled data) as the primary source. Additional data sources include non-SRTM DTED®, Canadian CDED, SPOT 5 Reference3D, US NED, Australia's GEODATA, and DEMs for Antarctica and Greenland. "
-                        "This dataset offers improved global elevation data and replaces the GTOPO30 Elevation Model. "
-                        "(<a href='https://topotools.cr.usgs.gov/gmted_viewer/viewer.htm'>Source</a>)"
-            }
+        self.language = QSettings().value("locale/userLocale", "en")[0:2]
 
-        }
+        if self.language == "pt":
+            self.dem_datasets = datasets_info.dem_datasets_pt
+        else:
+            self.dem_datasets = datasets_info.dem_datasets_en
 
+        
+
+        # Load the content of the intro.html file into a variable
+        if language == "pt":
+            intro_file_path = os.path.join(os.path.dirname(__file__), 'modules', 'intro_pt.html')
+        else:
+            intro_file_path = os.path.join(os.path.dirname(__file__), 'modules', 'intro.html')
+
+        with open(intro_file_path, 'r', encoding='utf-8') as file:
+            intro_content = file.read()
+
+        self.textEdit.setHtml(intro_content)  # Set the content to the textEdit widget
+        self.textEdit.setOpenExternalLinks(True)       
         self.textEdit.setReadOnly(True)  # Prevent editing
         self.textEdit.setTextInteractionFlags(Qt.TextBrowserInteraction)
         self.textEdit.anchorClicked.connect(self.open_link)
+
+        self.dem_info_textbox.setReadOnly(True)  # Prevent editing
+        self.dem_info_textbox.setTextInteractionFlags(Qt.TextBrowserInteraction)  # Make it interactive
+        self.dem_info_textbox.setOpenExternalLinks(True)
+        self.dem_info_textbox.anchorClicked.connect(self.open_link)
+
 
         self.tabWidget.setCurrentIndex(0)
 
         self.folder_set = False
         self.aio_set = True
         self.autentication = False
+        self.resizeEvent("small")
+
 
         # Call update_dem_datasets after initialization to avoid accessing dem_datasets before it's defined.
         self.update_dem_datasets()
         #self.load_vector_layers()
         self.dem_dataset_combobox.currentIndexChanged.connect(self.update_dem_info)
-        self.load_vector_layers_button.clicked.connect(self.load_vector_layers)
+        self.load_vector_layers_button.clicked.connect(self.update_combo_box)
         self.vector_layer_combobox.currentIndexChanged.connect(self.get_selected_layer_path)
         self.autenticacao.clicked.connect(self.auth)
         self.desautenticacao.clicked.connect(self.auth_clear)
         self.elevacao.clicked.connect(self.elevacao_clicked)
         self.mQgsFileWidget.fileChanged.connect(self.on_file_changed)
-        self.pushButtonNext.clicked.connect(self.next_button_clicked)
         self.tabWidget.currentChanged.connect(self.on_tab_changed)
 
         self.project_QgsPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.Normal)
@@ -277,6 +187,26 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.loadProjectId()
         # Connect the textChanged signal to automatically save changes.
         self.project_QgsPasswordLineEdit.textChanged.connect(self.autoSaveProjectId)
+
+    def update_combo_box(self):
+
+        try:
+            self.load_vector_layers()
+            self.get_selected_layer_path()
+            self.load_vector_function()
+        except:
+            pass    
+
+    def resizeEvent(self, size):
+        self.setMinimumSize(0, 0)  # Remove minimum size constraint
+        self.setMaximumSize(16777215, 16777215)  # Rem
+
+        if size == "small":
+            self.resize(594, 396)
+            self.setFixedSize(self.width(), self.height())  # Lock to small size
+        elif size == "big":
+            self.resize(594, 482)
+            self.setFixedSize(self.width(), self.height())  # Lock to big size
 
 
     def open_link(self, url):
@@ -354,16 +284,26 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def on_tab_changed(self, index):
         print(f"Tab changed to index: {index}")
-        if index == 2 and (self.pushButtonNext.isEnabled() == False):
-            self.tabWidget.setCurrentIndex(1)
-            return
         
         if index == 1 and (self.autentication == False):
             self.tabWidget.setCurrentIndex(0)
+            self.resizeEvent("small")
+            return
 
         if index == 1:
-            self.load_vector_layers()
 
+            try:
+                self.load_vector_layers()
+                self.get_selected_layer_path()
+                self.load_vector_function()
+            except:
+                pass
+
+            self.resizeEvent("big")
+
+        if index == 0:
+            self.resizeEvent("small")
+           
 
     def next_button_clicked(self):
         self.tabWidget.setCurrentIndex(self.tabWidget.currentIndex() + 1)
@@ -373,14 +313,6 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         print(f"File selected: {file_path}")
         self.output_folder = file_path
         self.folder_set = True
-        self.check_next_button()
-
-    def check_next_button(self):
-        """Enables the Next button if all required inputs are set."""
-        if self.folder_set and self.aio_set:
-            self.pushButtonNext.setEnabled(True)
-        else:
-            self.pushButtonNext.setEnabled(False)
 
     def update_dem_datasets(self):
         print(list(self.dem_datasets.keys()))
@@ -408,50 +340,135 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         print(f"Unique filename: {output_file}")
         return output_file
 
-    def load_vector_layers(self) -> None:
-        layers = QgsProject.instance().mapLayers().values()
+    # def load_vector_layers(self) -> None:
+    #     layers = QgsProject.instance().mapLayers().values()
+    #     self.vector_layer_combobox.clear()
+    #     self.vector_layer_ids = {}
+        
+    #     for layer in layers:
+    #         if layer.type() == QgsMapLayer.VectorLayer:
+    #             layer_name = layer.name()
+    #             print(f"Adding layer: {layer_name}")  # Debug: Show added layer names
+    #             self.vector_layer_combobox.addItem(layer_name)
+    #             self.vector_layer_ids[layer_name] = layer.id()
+        
+    #     # Debug: Show the layer dictionary after loading
+    #     print(f"Loaded vector layers: {self.vector_layer_ids}")
+    #     self.get_selected_layer_path()
+
+    def load_vector_layers(self):
+        # Get all layers in the current QGIS project / Obtém todas as camadas
+        # no projeto QGIS atual
+        layers = list(QgsProject.instance().mapLayers().values())
+
+        # Filter polygon and multipolygon vector layers / Filtra camadas
+        # vetoriais de polígono e multipolígono
+        vector_layers = [
+            layer
+            for layer in layers
+            if layer.type() == QgsMapLayer.VectorLayer
+            and layer.geometryType() == QgsWkbTypes.PolygonGeometry
+        ]
+
+        # Get current layer names / Obtém os nomes das camadas atuais
+        current_layer_names = set(
+            self.vector_layer_combobox.itemText(i)
+            for i in range(self.vector_layer_combobox.count())
+        )
+
+        # Clear the combobox and the dictionary / Limpa a combobox e o
+        # dicionário
         self.vector_layer_combobox.clear()
         self.vector_layer_ids = {}
-        
-        for layer in layers:
-            if layer.type() == QgsMapLayer.VectorLayer:
-                layer_name = layer.name()
-                print(f"Adding layer: {layer_name}")  # Debug: Show added layer names
-                self.vector_layer_combobox.addItem(layer_name)
-                self.vector_layer_ids[layer_name] = layer.id()
-        
-        # Debug: Show the layer dictionary after loading
-        print(f"Loaded vector layers: {self.vector_layer_ids}")
-        self.get_selected_layer_path()
+
+        # Find the new layer while populating the combobox / Encontra a nova
+        # camada enquanto popula a combobox
+        new_layer_name = None
+        for layer in vector_layers:
+            layer_name = layer.name()
+            self.vector_layer_combobox.addItem(layer_name)
+            self.vector_layer_ids[layer_name] = layer.id()
+
+            # If this layer wasn't in the previous list, it's new / Se esta
+            # camada não estava na lista anterior, é nova
+            if layer_name not in current_layer_names:
+                new_layer_name = layer_name
+
+        # If we found a new layer, select it / Se encontramos uma nova camada,
+        # selecione-a
+        if new_layer_name:
+            index = self.vector_layer_combobox.findText(new_layer_name)
+            self.vector_layer_combobox.setCurrentIndex(index)
+
+        if self.vector_layer_combobox.count() == 0:
+            self.aoi = None
+            
+            if language == 'pt':
+                self.pop_warning("Nenhuma camada vetorial encontrada no projeto.")
+            else:
+                self.pop_warning("No vector layers found in the project.")
+    
 
 
     def get_selected_layer_path(self):
         """
-        Retrieves the path of the currently selected layer in the combobox and triggers further processing.
+        Retrieves the path of the currently selected layer in the combobox and
+        triggers further processing.
         """
-        # Get the currently selected layer name from the combobox
-        layer_name = self.vector_layer_combobox.currentText()
+        """
+        Recupera o caminho da camada atualmente selecionada na combobox e
+        aciona o processamento adicional.
+        """
+        # Get the currently selected layer name from the combobox / Obtém o nome
+        # da camada atualmente selecionada da combobox
+        layer_name = (
+            self.vector_layer_combobox.currentText().strip()
+        )  # Remove whitespace
+        if layer_name == "":
+            print("No layer selected.")
+            return None
+        print(f"Layer name from combobox: '{layer_name}'")  # Debug
         self.zoom_to_layer(layer_name)
-        print(f"Selected layer name: {layer_name}")  # Debug: Show selected layer name
 
-        # Get the corresponding layer ID
+        # Get the corresponding layer ID / Obtém o ID da camada
+        # correspondente
         layer_id = self.vector_layer_ids.get(layer_name)
+        print(f"Layer ID from vector_layer_ids: {layer_id}")  # Debug
 
-        # Get the layer using its ID
+        if layer_id is None:
+            print(
+                f"Error: Layer ID is None for layer name '{layer_name}'.  Check vector_layer_ids."
+            )
+            print(
+                f"Contents of vector_layer_ids: {self.vector_layer_ids}"
+            )  # Debug
+            return None
+
+        # Get the layer using its ID / Obtém a camada usando seu ID
         layer = QgsProject.instance().mapLayer(layer_id)
         if layer:
-            print(f"Layer found: {layer.name()}, ID: {layer_id}")  # Debug: Confirm layer is found
-            self.selected_aio_layer_path = layer.dataProvider().dataSourceUri().split('|')[0]
-            print(f"Selected layer path: {self.selected_aio_layer_path}")  # Debug: Show selected layer path
-            
-            # Trigger the processing function
-            self.load_vector_function()
+            print(
+                f"Layer found: {layer.name()}, ID: {layer_id}"
+            )  # Debug: Confirm layer is found
+            self.selected_aio_layer_path = (
+                layer.dataProvider().dataSourceUri().split("|")[0]
+            )
+            print(
+                f"Selected layer path: {self.selected_aio_layer_path}"
+            )  # Debug: Show selected layer path
 
-            # Enable next steps if necessary
+            # Trigger the processing function / Aciona a função de
+            # processamento
+            self.aoi = self.load_vector_function()
+
+            # self.load_vector_function()
             return None
         else:
-            print(f"Layer '{layer_name}' with ID '{layer_id}' not found in the project.")
+            print(
+                f"Layer '{layer_name}' with ID '{layer_id}' not found in the project."
+            )
             return None
+        
 
     def update_dem_info(self):
         dem_name = self.dem_dataset_combobox.currentText()
@@ -616,7 +633,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
             print("Cancel button clicked")
             # Add your code here for what to do when Cancel is clicked
             return False
-    
+
     def load_vector_function(self):
         """
         Loads the vector layer from the selected file path, reprojects it to EPSG:4326,
@@ -683,14 +700,42 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
 
             print("AOI defined successfully.")
             self.aio_set = True
-            self.check_next_button()
 
         except Exception as e:
             print(f"Error in load_vector_function: {e}")
             return
 
+    def pop_warning(self, aviso):
+        QApplication.restoreOverrideCursor()
+        msg = QMessageBox(self)
+        if self.language == "pt":
+            msg.setWindowTitle("Aviso!")  
+        else:
+            msg.setWindowTitle("Warning!")
+
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText(aviso)
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.button(QMessageBox.Ok).setText("OK")
+        msg.setStyleSheet("font-size: 10pt;")
+        msg.exec_()
+
 
     def elevacao_clicked(self):
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        try: 
+            self.elevacao_workflow()
+            QApplication.restoreOverrideCursor()
+        except Exception as e:
+            print(f"Error in elevacao_workflow: {e}")
+            QApplication.restoreOverrideCursor()
+            self.pop_aviso(f"Error in elevation data processing: {e}")
+            return
+
+    def elevacao_workflow(self):
+
         aoi = self.aoi  # Assuming 'self.aoi' holds the Earth Engine FeatureCollection
 
         DEM_source_key = self.dem_dataset_combobox.currentText()
@@ -715,6 +760,10 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         else:
             dem = ee.Image(DEM_source_id).clip(aoi).select('elevation')
 
+        # Create a temporary file to store the downloaded DEM
+        with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp_file:
+            temp_output_file = tmp_file.name
+
         try:
             url = dem.getDownloadUrl({
                 'scale': DEM_resolution,
@@ -722,53 +771,118 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
                 'format': 'GeoTIFF'
             })
 
-            
-
-            # Include DEM source ID in file name, replacing invalid characters
-            base_file_name = f'elevation_profile_{safe_dem_source_id}'
-            output_file = self.get_unique_filename(base_file_name)
-
             response = requests.get(url)
             if response.status_code == 200:
-                with open(output_file, 'wb') as file:
+                with open(temp_output_file, 'wb') as file:
                     file.write(response.content)
-                print(f"DEM image downloaded as {output_file}")
+                print(f"DEM image downloaded to temporary file: {temp_output_file}")
             else:
                 print(f"Failed to download DEM image: {response.status_code}")
                 return
 
+            # Load the vector layer for clipping
+            vector_layer = QgsVectorLayer(self.selected_aio_layer_path, "Vector Layer", "ogr")
+            if not vector_layer.isValid():
+                print(f"Error: Vector layer '{self.selected_aio_layer_path}' is invalid.")
+                # Clean up the temporary file
+                os.remove(temp_output_file)
+                return
+
+            # Generate a unique name for the clipped output, including DEM source ID
+            output_path = self.get_unique_filename(safe_dem_source_id)
+            layer_name = self.vector_layer_combobox.currentText() + f' - {safe_dem_source_id}'
+
+            # Clip the raster using the vector layer
+            try:
+                processing.run("gdal:cliprasterbymasklayer", {
+                    'INPUT': temp_output_file,
+                    'MASK': vector_layer,
+                    'NODATA': -9999,  # Ensure this is the right value for your dataset
+                    'CROP_TO_CUTLINE': True,
+                    'OUTPUT': output_path
+                })
+                print(f"Clipped raster saved to: {output_path}")
+
+                # Load and add the clipped raster to the map canvas using the new method
+                self._load_clipped_raster_to_canvas(output_path, layer_name)
+
+            except Exception as e:
+                print(f"Error during clipping: {str(e)}")
+
+            finally:
+                # Clean up the temporary downloaded file
+                if os.path.exists(temp_output_file):
+                    os.remove(temp_output_file)
+                    print(f"Temporary file {temp_output_file} removed.")
+
         except Exception as e:
             print(f"Error during download: {e}")
+            self.pop_aviso(f"Error during download: {e}")
+            return
+        
+    def _load_clipped_raster_to_canvas(self, raster_path, layer_name):
+        """Loads a raster with single band pseudocolor rendering (Magma style) to the QGIS canvas,
+        dynamically determining the data range."""
+        raster_layer = QgsRasterLayer(raster_path, layer_name)
+        if not raster_layer.isValid():
+            print(f"Failed to load raster layer from '{raster_path}'.")
             return
 
-        # Load the vector layer for clipping
-        vector_layer = QgsVectorLayer(self.selected_aio_layer_path, "Vector Layer", "ogr")
+        # Get min and max values from the raster
+        provider = raster_layer.dataProvider()
+        stats = provider.bandStatistics(1)
+        min_val = stats.minimumValue
+        max_val = stats.maximumValue
 
-        if not vector_layer.isValid():
-            print(f"Error: Vector layer '{self.selected_aio_layer_path}' is invalid.")
-            return
+        print(f"Using data range {min_val} to {max_val} for rendering.")
 
-        # Generate a unique name for the clipped output, including DEM source ID
-        output_path = self.get_unique_filename(f'clipped_elevation_{safe_dem_source_id}')
+        QgsProject.instance().addMapLayer(raster_layer, False)
+        root = QgsProject.instance().layerTreeRoot()
+        root.insertChildNode(0, QgsLayerTreeLayer(raster_layer))
+        print("Raster layer loaded successfully!")
 
-        # Clip the raster using the vector layer
-        try:
-            processing.run("gdal:cliprasterbymasklayer", {
-                'INPUT': output_file,
-                'MASK': vector_layer,
-                'NODATA': -9999,  # Ensure this is the right value for your dataset
-                'CROP_TO_CUTLINE': True,
-                'OUTPUT': output_path
-            })
-            print(f"Clipped raster saved to: {output_path}")
+        # Create a color ramp shader
+        color_ramp_shader = QgsColorRampShader()
+        color_ramp_shader.setColorRampType(QgsColorRampShader.Interpolated)
 
-            # Load and add the clipped raster to the map canvas
-            clipped_raster_layer = QgsRasterLayer(output_path, self.vector_layer_combobox.currentText() + f' - {safe_dem_source_id}')
-            if clipped_raster_layer.isValid():
-                QgsProject.instance().addMapLayer(clipped_raster_layer)
-                print("Clipped raster added to canvas.")
-            else:
-                print("Failed to load clipped raster.")
+        # Load the predefined "Magma" color ramp from the QGIS style manager
+        style = QgsStyle().defaultStyle()
+        color_ramp = style.colorRamp('Magma')
 
-        except Exception as e:
-            print(f"Error during clipping: {str(e)}")
+        # Check if the color ramp is successfully loaded
+        if color_ramp:
+            # Define the number of color stops (adjust as needed)
+            num_stops = 5
+            step = (max_val - min_val) / (num_stops - 1)
+
+            # Create color ramp items using the actual data range
+            color_ramp_items = []
+            for i in range(num_stops):
+                value = min_val + i * step
+                color = color_ramp.color(i / (num_stops - 1))  # Interpolates color along the ramp
+                color_ramp_items.append(QgsColorRampShader.ColorRampItem(value, color))
+
+            # Set the color ramp items to the color ramp shader
+            color_ramp_shader.setColorRampItemList(color_ramp_items)
+        else:
+            print("Color ramp 'Magma' not found in the QGIS style library.")
+            return  # Exit if the color ramp is not found
+
+        # Create a raster shader and set it to use the color ramp shader
+        raster_shader = QgsRasterShader()
+        raster_shader.setRasterShaderFunction(color_ramp_shader)
+
+        # Apply the raster shader to the raster layer renderer
+        renderer = QgsSingleBandPseudoColorRenderer(raster_layer.dataProvider(), 1, raster_shader)
+
+        # Set the classification range to match the data range
+        renderer.setClassificationMin(min_val)
+        renderer.setClassificationMax(max_val)
+
+        raster_layer.setRenderer(renderer)
+
+        # Refresh the layer to update the visualization
+        raster_layer.triggerRepaint()
+        # iface = QgsInterface.instance() # Get the QGIS interface
+        # if iface and iface.mapCanvas():
+        #     iface.mapCanvas().refresh()
