@@ -614,7 +614,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         msg.setText(aviso)
         msg.setStandardButtons(QMessageBox.Icon.Warning | QMessageBox.Cancel)  # Add Ok and Cancel buttons
 
-        ret = msg.exec_()  # Get the result of the dialog
+        ret = msg.exec()  # Get the result of the dialog
 
         if ret == QMessageBox.StandardButton.Ok:
             
