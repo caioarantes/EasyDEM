@@ -5,8 +5,8 @@ import urllib.request
 import json
 import importlib
 
-from PyQt5.QtWidgets import QMessageBox, QApplication
-from PyQt5.QtCore import QSettings
+from qgis.PyQt.QtWidgets import QMessageBox, QApplication
+from qgis.PyQt.QtCore import QSettings
 
 print("Importing Earth Engine and Dash API utility functions...")
 

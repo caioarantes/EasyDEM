@@ -50,24 +50,23 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# PyQt5 imports
-from PyQt5 import uic, QtWidgets
-from PyQt5.QtCore import QSettings, Qt, QDate
-from PyQt5.QtWidgets import (
+# qgis.PyQt imports
+from qgis.PyQt import uic, QtWidgets
+from qgis.PyQt.QtCore import QSettings, Qt, QDate
+from qgis.PyQt.QtWidgets import (
     QDialog,
     QMessageBox,
     QFileDialog,
     QApplication,
     QGridLayout,
     QWidget,
-    QDesktopWidget,
     QVBoxLayout,
     QCheckBox,
     QDialogButtonBox,
     QPushButton,
     QLineEdit,
 )
-from PyQt5.QtGui import QColor
+from qgis.PyQt.QtGui import QColor
 
 # QGIS imports
 import qgis
@@ -129,7 +128,8 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         super(easydemDialog, self).__init__(parent)
         self.setupUi(self)
-        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMinimizeButtonHint)
+
 
         self.language = QSettings().value("locale/userLocale", "en")[0:2]
 
@@ -152,11 +152,9 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.textEdit.setHtml(intro_content)  # Set the content to the textEdit widget
         self.textEdit.setOpenExternalLinks(True)       
         self.textEdit.setReadOnly(True)  # Prevent editing
-        self.textEdit.setTextInteractionFlags(Qt.TextBrowserInteraction)
         self.textEdit.anchorClicked.connect(self.open_link)
 
-        self.dem_info_textbox.setReadOnly(True)  # Prevent editing
-        self.dem_info_textbox.setTextInteractionFlags(Qt.TextBrowserInteraction)  # Make it interactive
+        self.dem_info_textbox.setReadOnly(True)  # Prevent editing# Make it interactive
         self.dem_info_textbox.setOpenExternalLinks(True)
         self.dem_info_textbox.anchorClicked.connect(self.open_link)
 
@@ -181,7 +179,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mQgsFileWidget.fileChanged.connect(self.on_file_changed)
         self.tabWidget.currentChanged.connect(self.on_tab_changed)
 
-        self.project_QgsPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.Normal)
+        self.project_QgsPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Normal)
 
         # Ensure this sets up self.project_QgsPasswordLineEdit (or rename to something like self.projectIdLineEdit)
         self.loadProjectId()
@@ -197,14 +195,14 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         except:
             pass    
 
-    def resizeEvent(self, size):
+    def resizeEvent(self, event):
         self.setMinimumSize(0, 0)  # Remove minimum size constraint
-        self.setMaximumSize(16777215, 16777215)  # Rem
+        self.setMaximumSize(16777215, 16777215)  # Remove maximum size constraint
 
-        if size == "small":
+        if event == "small":
             self.resize(594, 396)
             self.setFixedSize(self.width(), self.height())  # Lock to small size
-        elif size == "big":
+        elif event == "big":
             self.resize(594, 482)
             self.setFixedSize(self.width(), self.height())  # Lock to big size
 
@@ -270,17 +268,14 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         QApplication.restoreOverrideCursor()
         msg = QMessageBox(self)
         msg.setWindowTitle("Warning!")
-        msg.setIcon(QMessageBox.Warning)
+        msg.setIcon(QMessageBox.Icon.Warning)
         msg.setText(aviso)
-        
-        # Set buttons with Ok on the right
-        msg.setStandardButtons(QMessageBox.Ok)
-        
-        # Access the buttons to set custom text
-        ok_button = msg.button(QMessageBox.Ok)
+
+        # Acessar os botões para definir texto personalizado
+        ok_button = msg.addButton(QMessageBox.StandardButton.Ok)
         ok_button.setText("Ok")
-        
-        msg.exec_()
+
+        msg.exec()
 
     def on_tab_changed(self, index):
         print(f"Tab changed to index: {index}")
@@ -615,13 +610,13 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         QApplication.restoreOverrideCursor()
         msg = QMessageBox(parent=self)
         msg.setWindowTitle("Alerta!")
-        msg.setIcon(QMessageBox.Warning)
+        msg.setIcon(QMessageBox.Icon.Warning)
         msg.setText(aviso)
-        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)  # Add Ok and Cancel buttons
+        msg.setStandardButtons(QMessageBox.Icon.Warning | QMessageBox.Cancel)  # Add Ok and Cancel buttons
 
         ret = msg.exec_()  # Get the result of the dialog
 
-        if ret == QMessageBox.Ok:
+        if ret == QMessageBox.StandardButton.Ok:
             
             # Handle Ok button click
             print("Ok button clicked")
@@ -709,21 +704,20 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         QApplication.restoreOverrideCursor()
         msg = QMessageBox(self)
         if self.language == "pt":
-            msg.setWindowTitle("Aviso!")  
+            msg.setWindowTitle("Aviso!")
         else:
             msg.setWindowTitle("Warning!")
 
-        msg.setIcon(QMessageBox.Warning)
+        msg.setIcon(QMessageBox.Icon.Warning)
         msg.setText(aviso)
-        msg.setStandardButtons(QMessageBox.Ok)
-        msg.button(QMessageBox.Ok).setText("OK")
+        msg.addButton(QMessageBox.StandardButton.Ok)
         msg.setStyleSheet("font-size: 10pt;")
-        msg.exec_()
-
+        msg.exec()
 
     def elevacao_clicked(self):
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        
 
         try: 
             self.elevacao_workflow()
