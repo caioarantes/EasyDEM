@@ -38,13 +38,13 @@ import urllib.request
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import tempfile
-from qgis.core import QgsWkbTypes
 
 # Third-party imports
 import geopandas as gpd
 import requests
 import pandas as pd
 import numpy as np
+import ee
 from scipy.signal import savgol_filter
 import plotly.express as px
 import plotly.graph_objects as go
@@ -52,7 +52,7 @@ from plotly.subplots import make_subplots
 
 # qgis.PyQt imports
 from qgis.PyQt import uic, QtWidgets
-from qgis.PyQt.QtCore import QSettings, Qt, QDate
+from qgis.PyQt.QtCore import QSettings, Qt, QDate, QVariant
 from qgis.PyQt.QtWidgets import (
     QDialog,
     QMessageBox,
@@ -93,25 +93,15 @@ from qgis.core import (
     QgsGeometry,
     QgsField,
     QgsVectorFileWriter,
+    QgsWkbTypes,
 )
-
 
 from qgis.utils import iface
 from qgis import processing
-from qgis.PyQt.QtCore import QVariant
 from qgis.analysis import QgsNativeAlgorithms
 
-from .modules import (
-    ee_utils,
-    datasets_info
+from .modules import datasets_info
 
-)
-
-# Import the Earth Engine API
-try:
-    import ee
-except:
-    pass
 
 language = QSettings().value("locale/userLocale", "en")[0:2]
 
