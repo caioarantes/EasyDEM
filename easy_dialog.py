@@ -120,15 +120,12 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setupUi(self)
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMinimizeButtonHint)
 
-
         self.language = QSettings().value("locale/userLocale", "en")[0:2]
 
         if self.language == "pt":
             self.dem_datasets = datasets_info.dem_datasets_pt
         else:
             self.dem_datasets = datasets_info.dem_datasets_en
-
-        
 
         # Load the content of the intro.html file into a variable
         if language == "pt":
@@ -143,19 +140,16 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.textEdit.setOpenExternalLinks(True)       
         self.textEdit.setReadOnly(True)  # Prevent editing
         self.textEdit.anchorClicked.connect(self.open_link)
-
         self.dem_info_textbox.setReadOnly(True)  # Prevent editing# Make it interactive
         self.dem_info_textbox.setOpenExternalLinks(True)
         self.dem_info_textbox.anchorClicked.connect(self.open_link)
 
-
         self.tabWidget.setCurrentIndex(0)
 
         self.folder_set = False
-        self.aio_set = True
+        self.aoi_set = True
         self.autentication = False
         self.resizeEvent("small")
-
 
         # Call update_dem_datasets after initialization to avoid accessing dem_datasets before it's defined.
         self.update_dem_datasets()
@@ -168,6 +162,8 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.elevacao.clicked.connect(self.elevacao_clicked)
         self.mQgsFileWidget.fileChanged.connect(self.on_file_changed)
         self.tabWidget.currentChanged.connect(self.on_tab_changed)
+        self.browser.clicked.connect(self.open_learn_dialog)
+        self.horizontalSlider_buffer.valueChanged.connect(self.update_labels)
 
         self.project_QgsPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Normal)
 
@@ -175,6 +171,10 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.loadProjectId()
         # Connect the textChanged signal to automatically save changes.
         self.project_QgsPasswordLineEdit.textChanged.connect(self.autoSaveProjectId)
+
+    def open_learn_dialog(self):
+        """Open the learn dialog."""
+        webbrowser.open("https://caioarantes.github.io/EasyDEM/")
 
     def update_combo_box(self):
 
@@ -184,6 +184,24 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
             self.load_vector_function()
         except:
             pass    
+
+    def update_labels(self):
+        """Updates the text of several labels based on the values of horizontal
+        sliders."""
+        self.label_buffer.setText(f"{self.horizontalSlider_buffer.value()}m")
+
+    def apply_buffer(self, aoi):
+        """Applies a buffer to the AOI geometry."""
+        buffer_distance = self.horizontalSlider_buffer.value()
+        print(f"Applying buffer of {buffer_distance} meters to AOI.")
+        if buffer_distance != 0:
+            print(f"Buffer distance: {buffer_distance} meters")
+            aoi = aoi.map(lambda feature: feature.buffer(buffer_distance))
+            #self.aoi = aoi
+            return aoi
+        else:
+            print("No buffer applied")
+            return aoi
 
     def resizeEvent(self, event):
         self.setMinimumSize(0, 0)  # Remove minimum size constraint
@@ -195,7 +213,6 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         elif event == "big":
             self.resize(594, 482)
             self.setFixedSize(self.width(), self.height())  # Lock to big size
-
 
     def open_link(self, url):
         """Open the clicked link in the default web browser."""
@@ -289,7 +306,6 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         if index == 0:
             self.resizeEvent("small")
            
-
     def next_button_clicked(self):
         self.tabWidget.setCurrentIndex(self.tabWidget.currentIndex() + 1)
 
@@ -324,22 +340,6 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
 
         print(f"Unique filename: {output_file}")
         return output_file
-
-    # def load_vector_layers(self) -> None:
-    #     layers = QgsProject.instance().mapLayers().values()
-    #     self.vector_layer_combobox.clear()
-    #     self.vector_layer_ids = {}
-        
-    #     for layer in layers:
-    #         if layer.type() == QgsMapLayer.VectorLayer:
-    #             layer_name = layer.name()
-    #             print(f"Adding layer: {layer_name}")  # Debug: Show added layer names
-    #             self.vector_layer_combobox.addItem(layer_name)
-    #             self.vector_layer_ids[layer_name] = layer.id()
-        
-    #     # Debug: Show the layer dictionary after loading
-    #     print(f"Loaded vector layers: {self.vector_layer_ids}")
-    #     self.get_selected_layer_path()
 
     def load_vector_layers(self):
         # Get all layers in the current QGIS project / Obtém todas as camadas
@@ -435,25 +435,24 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
             print(
                 f"Layer found: {layer.name()}, ID: {layer_id}"
             )  # Debug: Confirm layer is found
-            self.selected_aio_layer_path = (
+            self.selected_aoi_layer_path = (
                 layer.dataProvider().dataSourceUri().split("|")[0]
             )
             print(
-                f"Selected layer path: {self.selected_aio_layer_path}"
+                f"Selected layer path: {self.selected_aoi_layer_path}"
             )  # Debug: Show selected layer path
 
             # Trigger the processing function / Aciona a função de
             # processamento
+
             self.aoi = self.load_vector_function()
 
-            # self.load_vector_function()
             return None
         else:
             print(
                 f"Layer '{layer_name}' with ID '{layer_id}' not found in the project."
             )
             return None
-        
 
     def update_dem_info(self):
         dem_name = self.dem_dataset_combobox.currentText()
@@ -461,7 +460,6 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         self.dem_info_textbox.setHtml(dem_info)
         self.dem_resolution_combobox.clear()
         self.dem_resolution_combobox.addItems([str(res) for res in self.dem_datasets[dem_name]["Resolution"]])
-
 
     def zoom_to_layer(self, layer_name, margin_ratio=0.1):
         """
@@ -552,7 +550,6 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.pop_aviso_auth(message)
                 self.auth_clear(True)
 
-
         except Exception as e:
             # Handle unexpected errors
             message = f"An unexpected error occurred: {e}"
@@ -625,7 +622,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         dissolves multiple features if necessary, and converts it into an Earth Engine
         FeatureCollection representing the AOI.
         """
-        shapefile_path = self.selected_aio_layer_path
+        shapefile_path = self.selected_aoi_layer_path
         self.aoi = None  # Ensure the attribute exists to avoid AttributeError
 
         try:
@@ -684,7 +681,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
             self.aoi = ee.FeatureCollection([feature])
 
             print("AOI defined successfully.")
-            self.aio_set = True
+            self.aoi_set = True
 
         except Exception as e:
             print(f"Error in load_vector_function: {e}")
@@ -706,8 +703,7 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def elevacao_clicked(self):
 
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)  
 
         try: 
             self.elevacao_workflow()
@@ -720,7 +716,10 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def elevacao_workflow(self):
 
-        aoi = self.aoi  # Assuming 'self.aoi' holds the Earth Engine FeatureCollection
+        # Assuming 'self.aoi' holds the Earth Engine FeatureCollection
+        # --- KEY CHANGE: Use updateMask for more reliable clipping ---
+        # Apply buffer if needed. Ensure self.aoi is an ee.Geometry object.
+        aoi = self.apply_buffer(self.aoi)
 
         DEM_source_key = self.dem_dataset_combobox.currentText()
         DEM_source_id = self.dem_datasets[DEM_source_key]["ID"]
@@ -748,10 +747,27 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
         with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp_file:
             temp_output_file = tmp_file.name
 
+        final_image = dem.toFloat()
+
+
+        # 1. Create an explicit mask from the AOI geometry.
+        # ee.Image(1).clip(aoi) creates an image where the AOI is 1 and outside is 0.
+        # .mask() converts this to a mask where 1 is valid data and 0 is NoData.
+        mask = ee.Image(1).clip(aoi).mask()
+
+        # 2. Apply this mask to the final composite image.
+        # This operation sets pixels outside the mask to NoData (transparent).
+        final_image_masked = final_image.updateMask(mask)
+
+        # 3. Define the download region using the BOUNDING BOX of the AOI.
+        # This ensures the downloaded GeoTIFF is a rectangle that fully covers the AOI.
+        # The actual clipping to the irregular shape is handled by updateMask.
+        download_region = aoi.geometry().bounds().getInfo()
+
         try:
-            url = dem.getDownloadUrl({
+            url = final_image_masked.getDownloadUrl({
                 'scale': DEM_resolution,
-                'region': aoi.geometry().bounds().getInfo(),
+                'region': download_region,
                 'format': 'GeoTIFF'
             })
 
@@ -765,48 +781,42 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
                 return
 
             # Load the vector layer for clipping
-            vector_layer = QgsVectorLayer(self.selected_aio_layer_path, "Vector Layer", "ogr")
+            vector_layer = QgsVectorLayer(self.selected_aoi_layer_path, "Vector Layer", "ogr")
             if not vector_layer.isValid():
-                print(f"Error: Vector layer '{self.selected_aio_layer_path}' is invalid.")
+                print(f"Error: Vector layer '{self.selected_aoi_layer_path}' is invalid.")
                 # Clean up the temporary file
                 os.remove(temp_output_file)
                 return
 
-            # Generate a unique name for the clipped output, including DEM source ID
+            # Generate a unique name for the output, including DEM source ID
             output_path = self.get_unique_filename(safe_dem_source_id)
             layer_name = self.vector_layer_combobox.currentText() + f' - {safe_dem_source_id}'
 
-            # Clip the raster using the vector layer
+            # Move the downloaded file to the output path and load it directly in QGIS
             try:
-                processing.run("gdal:cliprasterbymasklayer", {
-                    'INPUT': temp_output_file,
-                    'MASK': vector_layer,
-                    'NODATA': -9999,  # Ensure this is the right value for your dataset
-                    'CROP_TO_CUTLINE': True,
-                    'OUTPUT': output_path
-                })
-                print(f"Clipped raster saved to: {output_path}")
+                shutil.move(temp_output_file, output_path)
+                print(f"Downloaded DEM moved to: {output_path}")
 
-                # Load and add the clipped raster to the map canvas using the new method
-                self._load_clipped_raster_to_canvas(output_path, layer_name)
+                # Load and add the raster to the map canvas (no local clipping)
+                self._load_raster_to_canvas(output_path, layer_name)
 
             except Exception as e:
-                print(f"Error during clipping: {str(e)}")
-
-            finally:
-                # Clean up the temporary downloaded file
+                print(f"Error moving or loading raster: {str(e)}")
+                # If something failed, try to remove temp file if it still exists
                 if os.path.exists(temp_output_file):
-                    os.remove(temp_output_file)
-                    print(f"Temporary file {temp_output_file} removed.")
+                    try:
+                        os.remove(temp_output_file)
+                    except Exception:
+                        pass
 
         except Exception as e:
             print(f"Error during download: {e}")
             self.pop_aviso(f"Error during download: {e}")
             return
         
-    def _load_clipped_raster_to_canvas(self, raster_path, layer_name):
+    def _load_raster_to_canvas(self, raster_path, layer_name):
         """Loads a raster with single band pseudocolor rendering (Magma style) to the QGIS canvas,
-        dynamically determining the data range."""
+        dynamically determining the data range. This version does not perform any clipping."""
         raster_layer = QgsRasterLayer(raster_path, layer_name)
         if not raster_layer.isValid():
             print(f"Failed to load raster layer from '{raster_path}'.")
@@ -867,6 +877,3 @@ class easydemDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # Refresh the layer to update the visualization
         raster_layer.triggerRepaint()
-        # iface = QgsInterface.instance() # Get the QGIS interface
-        # if iface and iface.mapCanvas():
-        #     iface.mapCanvas().refresh()
