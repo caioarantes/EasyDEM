@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: google-api-core
-Version: 2.26.0
+Version: 2.27.0
 Summary: Google API client core library
 Author-email: Google LLC <googleapis-packages@google.com>
 License: Apache 2.0

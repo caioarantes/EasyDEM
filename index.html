@@ -324,41 +324,45 @@
 </head>
 
 <body>
-  <div class="container">
+    <div class="container">
     <aside class="sidebar" aria-label="Navigation Sidebar">
-      <h2>Sections</h2>
+      <h2 data-en="Sections" data-pt="Seções">Sections</h2>
       <ul>
-        <li><a href="#about">About EasyDEM</a></li>
-        <li><a href="#features">Features</a></li>
-        <li><a href="#installation">Installation</a></li>
-        <li><a href="#guide">Step-by-Step Guide</a></li>
-        <li><a href="#author">About the Author</a></li>
-        <li><a href="#contribution">Contribution</a></li>
-        <li><a href="#license">License</a></li>
+        <li><a href="#about" data-en="About EasyDEM" data-pt="Sobre o EasyDEM">About EasyDEM</a></li>
+        <li><a href="#features" data-en="Features" data-pt="Recursos">Features</a></li>
+        <li><a href="#installation" data-en="Installation" data-pt="Instalação">Installation</a></li>
+        <li><a href="#guide" data-en="Step-by-Step Guide" data-pt="Guia Passo a Passo">Step-by-Step Guide</a></li>
+        <li><a href="#author" data-en="About the Author" data-pt="Sobre o Autor">About the Author</a></li>
+        <li><a href="#contribution" data-en="Contribution" data-pt="Contribuição">Contribution</a></li>
+        <li><a href="#license" data-en="License" data-pt="Licença">License</a></li>
       </ul>
     </aside>
 
     <main>
-      <header>
-        <div class="title">
+      <header style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="title" style="display:flex;align-items:center;gap:12px;">
           <img src="./index_files/icon.png" alt="EasyDEM Logo">
           <h1>EasyDEM QGIS Plugin</h1>
         </div>
-        <p>Multiple DEM datasets via Google Earth Engine API</p>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="langEnBtn" style="padding:6px 10px;border-radius:4px;cursor:pointer;">English</button>
+          <button id="langPtBtn" style="padding:6px 10px;border-radius:4px;cursor:pointer;">Português</button>
+        </div>
       </header>
+      <p>Multiple DEM datasets via Google Earth Engine API</p>
 
       <section id="about">
-        <h2>About EasyDEM</h2>
-        <p>
+        <h2 data-en="About EasyDEM" data-pt="Sobre o EasyDEM">About EasyDEM</h2>
+  <p data-en="<strong>EasyDEM</strong> is a QGIS plugin that enables you to easily access and download multiple Digital Elevation Models (DEMs) from Google Earth Engine. With a seamless integration into QGIS, you can quickly visualize and analyze topography from datasets such as NASADEM, ASTER GED, COPERNICUS DEM, JAXA ALOS, and USGS GMTED2010." data-pt="<strong>EasyDEM</strong> é um plugin do QGIS que permite acessar e baixar facilmente vários Modelos Digitais de Elevação (DEMs) do Google Earth Engine. Com integração direta ao QGIS, você pode visualizar e analisar topografia de conjuntos de dados como NASADEM, ASTER GED, COPERNICUS DEM, JAXA ALOS e USGS GMTED2010.">
           <strong>EasyDEM</strong> is a QGIS plugin that enables you to easily access and download multiple Digital Elevation Models (DEMs) from Google Earth Engine. With a seamless integration into QGIS, you can quickly visualize and analyze topography from datasets such as NASADEM, ASTER GED, COPERNICUS DEM, JAXA ALOS, and USGS GMTED2010.
         </p>
       </section>
 
       <section id="features">
-        <h2>Features</h2>
+        <h2 data-en="Features" data-pt="Recursos">Features</h2>
         <ul>
           <li>
-            <strong>Access Multiple DEM Datasets</strong>: Quickly access and visualize various DEM datasets from GEE catalogs including:
+            <strong data-en="Access Multiple DEM Datasets" data-pt="Acessar múltiplos DEMs">Access Multiple DEM Datasets</strong>: <span data-en="Quickly access and visualize various DEM datasets from GEE catalogs including:" data-pt="Acesse e visualize rapidamente diversos conjuntos de DEM do catálogo GEE, incluindo:">Quickly access and visualize various DEM datasets from GEE catalogs including:</span>
             <ol>
               <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_NASADEM_HGT_001" target="_blank">NASA/NASADEM_HGT/001</a></li>
               <li><a href="https://developers.google.com/earth-engine/datasets/catalog/NASA_ASTER_GED_AG100_003" target="_blank">NASA/ASTER_GED/AG100_003</a></li>
@@ -371,61 +375,66 @@
       </section>
 
       <section id="installation">
-        <h2>Installation</h2>
-        <h3>Via QGIS Plugin Manager</h3>
+        <h2 data-en="Installation" data-pt="Instalação">Installation</h2>
+        <h3 data-en="Via QGIS Plugin Manager" data-pt="Via Gerenciador de Plugins do QGIS">Via QGIS Plugin Manager</h3>
         <ol>
-          <li>Open QGIS.</li>
-          <li>Navigate to
+          <li data-en="Open QGIS." data-pt="Abra o QGIS.">Open QGIS.</li>
+          <li data-en="Navigate to <code>Plugins &gt; Manage and Install Plugins</code>." data-pt="Navegue em <code>Plugins &gt; Gerenciar e Instalar Plugins</code>.">Navigate to
             <code>Plugins &gt; Manage and Install Plugins</code>.</li>
-          <li>Search for <strong>EasyDEM</strong>.</li>
-          <li>Click <strong>Install</strong>.</li>
-          <li><strong>MUST DO:</strong> Restart QGIS to activate the plugin.</li>
+          <li data-en="Search for <strong>EasyDEM</strong>." data-pt="Procure por <strong>EasyDEM</strong>.">Search for <strong>EasyDEM</strong>.</li>
+          <li data-en="Click <strong>Install</strong>." data-pt="Clique em <strong>Instalar</strong>.">Click <strong>Install</strong>.</li>
         </ol>
-        <p>
+        <p data-en="Once installed, access DEM data by opening the plugin toolbar or icon, authenticating your Google Earth Engine (GEE) account, choosing your Area of Interest (vector layer) and output folder, and selecting your desired DEM dataset." data-pt="Uma vez instalado, acesse os dados DEM abrindo a barra de ferramentas do plugin ou o ícone, autenticando sua conta do Google Earth Engine (GEE), escolhendo sua Área de Interesse (camada vetorial) e pasta de saída, e selecionando o conjunto de DEM desejado.">
           Once installed, access DEM data by opening the plugin toolbar or icon, authenticating your Google Earth Engine (GEE) account, choosing your Area of Interest (vector layer) and output folder, and selecting your desired DEM dataset.
         </p>
       </section>
 
       <section id="guide">
-        <h2>Step-by-Step Guide</h2>
+        <h2 data-en="Step-by-Step Guide" data-pt="Guia Passo a Passo">Step-by-Step Guide</h2>
         <ol>
           <li>
-            <strong>Initial Setup:</strong>
+            <strong data-en="Initial Setup:" data-pt="Configuração Inicial:">Initial Setup:</strong>
             <img src="./index_files/1.png" alt="Initial Setup Screenshot" class="screenshot">
           </li>
           <li>
-            <strong>Area of Interest Selection:</strong>
+            <strong data-en="Area of Interest Selection:" data-pt="Seleção da Área de Interesse:">Area of Interest Selection:</strong>
             <img src="./index_files/2.png" alt="Area of Interest Selection Screenshot" class="screenshot">
           </li>
           <li>
-            <strong>DEM Dataset Selection:</strong>
+            <strong data-en="DEM Dataset Selection:" data-pt="Seleção do Conjunto DEM:">DEM Dataset Selection:</strong>
             <img src="./index_files/3.png" alt="DEM Dataset Selection Screenshot" class="screenshot">
           </li>
         </ol>
       </section>
 
       <section id="author">
-        <h2>About the Author</h2>
-        <p>
+        <h2 data-en="About the Author" data-pt="Sobre o Autor">About the Author</h2>
+        <p data-en="The EasyDEM plugin was developed by <strong>Caio Arantes</strong>, an Agricultural Engineering student passionate about precision agriculture and geotechnology. With experience in QGIS plugin development and remote sensing applications, he created EasyDEM as part of his final graduation project." data-pt="O plugin EasyDEM foi desenvolvido por <strong>Caio Arantes</strong>, estudante de Engenharia Agrícola, apaixonado por agricultura de precisão e geotecnologias. Com experiência em desenvolvimento de plugins para QGIS e aplicações de sensoriamento remoto, ele criou o EasyDEM como parte de seu trabalho de conclusão de curso.">
           The EasyDEM plugin was developed by <strong>Caio Arantes</strong>, an Agricultural Engineering student passionate about precision agriculture and geotechnology. With experience in QGIS plugin development and remote sensing applications, he created EasyDEM as part of his final graduation project.
         </p>
         <p>
-          📧 <strong>Email:</strong> <a href="mailto:caiosimplicioarantes@gmail.com">caiosimplicioarantes@gmail.com</a><br>
-          🔗 <strong>LinkedIn:</strong> <a href="https://www.linkedin.com/in/caioarantes">linkedin.com/in/caioarantes</a><br>
-          💻 <strong>GitHub:</strong> <a href="https://github.com/caioarantes">github.com/caioarantes</a>
+          📧 <strong data-en="Email:" data-pt="Email:">Email:</strong> <a href="mailto:caiosimplicioarantes@gmail.com">caiosimplicioarantes@gmail.com</a><br>
+          🔗 <strong data-en="LinkedIn:" data-pt="LinkedIn:">LinkedIn:</strong> <a href="https://www.linkedin.com/in/caioarantes">linkedin.com/in/caioarantes</a><br>
+          💻 <strong data-en="GitHub:" data-pt="GitHub:">GitHub:</strong> <a href="https://github.com/caioarantes">github.com/caioarantes</a>
+        </p>
+        <p data-en="This project was developed under the supervision of <strong>Lucas Amaral</strong> — <a href='https://www.linkedin.com/in/lucas-rios-do-amaral-bb302449/' target='_blank'>https://www.linkedin.com/in/lucas-rios-do-amaral-bb302449/</a>." data-pt="Este projeto foi desenvolvido sob a supervisão de <strong>Lucas Amaral</strong> — <a href='https://www.linkedin.com/in/lucas-rios-do-amaral-bb302449/' target='_blank'>https://www.linkedin.com/in/lucas-rios-do-amaral-bb302449/</a>.">
+          This project was developed under the supervision of <strong>Lucas Amaral</strong> — <a href="https://www.linkedin.com/in/lucas-rios-do-amaral-bb302449/" target="_blank">https://www.linkedin.com/in/lucas-rios-do-amaral-bb302449/</a>.
+        </p>
+        <p data-en="The work was also supported by <strong>GITAP</strong>. See their page: <a href='https://www.linkedin.com/company/gitap-feagri/about/' target='_blank'>https://www.linkedin.com/company/gitap-feagri/about/</a>." data-pt="O trabalho também foi apoiado pelo <strong>GITAP</strong>. Veja a página: <a href='https://www.linkedin.com/company/gitap-feagri/about/' target='_blank'>https://www.linkedin.com/company/gitap-feagri/about/</a>.">
+          The work was also supported by <strong>GITAP</strong>. See their page: <a href="https://www.linkedin.com/company/gitap-feagri/about/" target="_blank">https://www.linkedin.com/company/gitap-feagri/about/</a>.
         </p>
       </section>
 
       <section id="contribution">
-        <h2>Contribution</h2>
-        <p>
+        <h2 data-en="Contribution" data-pt="Contribuição">Contribution</h2>
+        <p data-en="Contributions to the EasyDEM plugin are welcome! Feel free to submit bug reports, feature requests, or pull requests." data-pt="Contribuições para o plugin EasyDEM são bem-vindas! Sinta-se à vontade para enviar relatórios de bug, pedidos de recurso ou pull requests.">
           Contributions to the EasyDEM plugin are welcome! Feel free to submit bug reports, feature requests, or pull requests.
         </p>
       </section>
 
       <section id="license">
-        <h2>License</h2>
-        <p>
+        <h2 data-en="License" data-pt="Licença">License</h2>
+        <p data-en="This project is licensed under the GNU GENERAL PUBLIC LICENSE. See the <a href='https://github.com/caioarantes/EasyDEM/blob/main/LICENSE' target='_blank'>LICENSE</a> file for more details." data-pt="Este projeto está licenciado sob a GNU GENERAL PUBLIC LICENSE. Veja o arquivo <a href='https://github.com/caioarantes/EasyDEM/blob/main/LICENSE' target='_blank'>LICENSE</a> para mais detalhes.">
           This project is licensed under the GNU GENERAL PUBLIC LICENSE. See the <a href="https://github.com/caioarantes/EasyDEM/blob/main/LICENSE" target="_blank">LICENSE</a> file for more details.
         </p>
       </section>
@@ -435,6 +444,43 @@
   <!-- <footer>
     <p>&copy; 2024 Caio Arantes.</p>
   </footer> -->
+  <script>
+    // Language helper: two buttons (English / Português) in header
+    (function() {
+      const enBtn = document.getElementById('langEnBtn');
+      const ptBtn = document.getElementById('langPtBtn');
+
+      function getPreferredLang() {
+        const stored = localStorage.getItem('easydem_lang');
+        if (stored) return stored;
+        const nav = navigator.language || navigator.userLanguage || 'en';
+        return nav.toLowerCase().startsWith('pt') ? 'pt' : 'en';
+      }
+
+      function applyLang(lang) {
+        localStorage.setItem('easydem_lang', lang);
+        // Update button styles (simple visual feedback)
+        if (lang === 'pt') {
+          ptBtn.style.fontWeight = '700'; enBtn.style.fontWeight = '400';
+        } else {
+          enBtn.style.fontWeight = '700'; ptBtn.style.fontWeight = '400';
+        }
+
+        document.querySelectorAll('[data-en]').forEach(el => {
+          const en = el.getAttribute('data-en');
+          const pt = el.getAttribute('data-pt');
+          if (lang === 'pt' && pt) el.innerHTML = pt;
+          else if (lang === 'en' && en) el.innerHTML = en;
+        });
+      }
+
+      const preferred = getPreferredLang();
+      applyLang(preferred);
+
+      enBtn.addEventListener('click', () => applyLang('en'));
+      ptBtn.addEventListener('click', () => applyLang('pt'));
+    })();
+  </script>
 </body>
 
 </html>
